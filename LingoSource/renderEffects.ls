@@ -42,7 +42,8 @@ on newFrame me
   end if
   --  if we've rendered all the rows on this screen, and not moving onto the next screen, or we've reached the end of the screen,
   efcsc = gEEprops.effects[r].crossScreen
-  if ( (vertRepeater > 60) and (efcsc = 0) ) or ( (vertRepeater > gLOprops.size.locV) and (efcsc = 1)) then
+  -- if ( (vertRepeater > 60) and (efcsc = 0) ) or ( (vertRepeater > gLOprops.size.locV) and (efcsc = 1)) then
+if ( (vertRepeater > gLOprops.size.locV) and ( (efcsc = 0) or (efcsc = 1) ) ) then
     me.exitEffect() -- then stop rendering this effect,
     r = r + 1       -- and move onto the next one
     
@@ -60,7 +61,7 @@ on newFrame me
     sprite(59).locV = vertRepeater*20 -- i think this moves that big line across the screen that shows where the effect is being applied? no clue.
     
     -- render all of the tiles within this row.
-    repeat with q = 1 to 100
+    repeat with q = 1 to gLOProps.size.locH
       q2 = q + gRenderCameraTilePos.locH
       c2 = vertRepeater + gRenderCameraTilePos.locV
       if (q2 > 0) then
@@ -545,8 +546,8 @@ on initEffect me
   
   case effectr.nm of
     "BlackGoo":
-      cols = 100
-      rows = 60
+      cols = gLOProps.size.locH
+      rows = gLOProps.size.locV
       
       member("blackOutImg1").image = image(cols*20, rows*20, 32)
       blk1 = member("blackOutImg1").image
@@ -559,8 +560,8 @@ on initEffect me
       
       global gRenderCameraTilePos, gRenderCameraPixelPos
       
-      repeat with q = 1 to 100
-        repeat with c = 1 to 60
+      repeat with q = 1 to cols
+        repeat with c = 1 to rows
           q2 = q + gRenderCameraTilePos.locH
           c2 = c + gRenderCameraTilePos.locV
           if(q2 < 1)or(q2 > gLOprops.size.locH)or(c2 < 1)or(c2 > gLOprops.size.locV)then
@@ -600,8 +601,8 @@ on initEffect me
       end repeat
       
     "Super BlackGoo":
-      cols = 100
-      rows = 60
+      cols = gLOProps.size.locH
+      rows = gLOProps.size.locV
       
       member("blackOutImg1").image = image(cols*20, rows*20, 32)
       blk1 = member("blackOutImg1").image
@@ -614,8 +615,8 @@ on initEffect me
       
       global gRenderCameraTilePos, gRenderCameraPixelPos
       
-      repeat with q = 1 to 100
-        repeat with c = 1 to 60
+      repeat with q = 1 to cols
+        repeat with c = 1 to rows
           q2 = q + gRenderCameraTilePos.locH
           c2 = c + gRenderCameraTilePos.locV
           if(q2 < 1)or(q2 > gLOprops.size.locH)or(c2 < 1)or(c2 > gLOprops.size.locV)then

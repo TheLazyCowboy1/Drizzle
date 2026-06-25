@@ -18,8 +18,8 @@ on renderLevel()
   gRenderTrashProps = []
   
   RENDER = 0
-  cols = 100--gLOprops.size.loch
-  rows = 60--gLOprops.size.locv
+  cols = gLOprops.size.loch
+  rows = gLOprops.size.locv
   
   -- member("bkgBkgImage").image = image(cols*20, rows*20, 16)
   member("finalImage").image = image(cols*20, rows*20, 32)
@@ -43,8 +43,8 @@ end
 
 on setUpLayer(layer)
   -- global gLoprops
-  cols = 100--gLoprops.size.loch
-  rows = 60--gLoprops.size.locv
+  cols = gLoprops.size.loch
+  rows = gLoprops.size.locv
   tlset = member("tileSet1").image.duplicate()
   if layer = 1 then
     dpt = 0
@@ -64,7 +64,9 @@ on setUpLayer(layer)
   --      member("concreteTexture").image.copyPixels( member("concreteTexture2").image, rect((q-1)*108, (c-1)*108,q*108,c*108), rect(0,0,108,108) )
   --    end repeat
   --  end repeat
-  global gLOprops
+  -- global gLOprops
+  gRenderCameraTilePos = point(1, 1)
+  gRenderCameraPixelPos = point(20, 20)
   
   member("vertImg").image = image(cols*20, rows*20, 32)
   member("horiImg").image = image(cols*20, rows*20, 32)
@@ -80,8 +82,8 @@ on setUpLayer(layer)
   -- depthPnt(pnt, dpt)
   repeat with q = 1 to cols then
     repeat with c = 1 to rows then
-      -- if((q >= gRenderCameraTilePos.locH)and(q < gRenderCameraTilePos.locH + cols)and(c >= gRenderCameraTilePos.locV)and(c < gRenderCameraTilePos.locV + rows))or(checkIfTileHasMaterialRenderTypeTiles(point(q,c), layer))then
-      if(q+gRenderCameraTilePos.locH > 0)and(q+gRenderCameraTilePos.locH <= gLOprops.size.locH)and(c+gRenderCameraTilePos.locV > 0)and(c+gRenderCameraTilePos.locV <= gLOprops.size.locV)then
+      if((q >= gRenderCameraTilePos.locH)and(q < gRenderCameraTilePos.locH + cols)and(c >= gRenderCameraTilePos.locV)and(c < gRenderCameraTilePos.locV + rows))or(checkIfTileHasMaterialRenderTypeTiles(point(q,c), layer))then
+      -- if(q+gRenderCameraTilePos.locH > 0)and(q+gRenderCameraTilePos.locH <= gLOprops.size.locH)and(c+gRenderCameraTilePos.locV > 0)and(c+gRenderCameraTilePos.locV <= gLOprops.size.locV)then
         ps = point(q,c)+gRenderCameraTilePos
         
         tp = gLEProps.matrix[ps.loch][ps.locV][layer][1]
