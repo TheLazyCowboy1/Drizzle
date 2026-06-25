@@ -9,6 +9,8 @@ using Drizzle.Ported;
 using Serilog;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace Drizzle.Logic.Rendering;
 
@@ -41,54 +43,101 @@ public sealed partial class LevelRenderer
             }
         }
 
+        if (camOrder.Count == 0)
+        {
+            Movie.newmakelevel(Movie.gLoadedName);
+            return;
+        }
+
+        // Each camera's stored point is the top-left world-pixel of its view.
+        // Compute the common origin so we can place every camera into one image.
+        var minX = int.MaxValue;
+        var minY = int.MaxValue;
         foreach (var camIndex in camOrder)
         {
-            try
+            var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
+            minX = Math.Min(minX, (int)Math.Round((double)cam.loch));
+            minY = Math.Min(minY, (int)Math.Round((double)cam.locv));
+        }
+
+        // Hold each rendered camera until all are done (sizes only known after render).
+        var rendered = new List<(int ox, int oy, Image<Bgra32> img)>();
+        var maxX = int.MinValue;
+        var maxY = int.MinValue;
+
+        try
+        {
+            foreach (var camIndex in camOrder)
             {
-                RenderSetupCamera(camIndex);
+                try
+                {
+                    RenderSetupCamera(camIndex);
 
-                RenderLayers();
-                RenderPropsPreEffects();
-                RenderEffects();
-                RenderPropsPostEffects();
-                RenderLight();
-                RenderFinalize();
-                RenderColors();
-                RenderFinished();
+                    RenderLayers();
+                    RenderPropsPreEffects();
+                    RenderEffects();
+                    RenderPropsPostEffects();
+                    RenderLight();
+                    RenderFinalize();
+                    RenderColors();
+                    RenderFinished();
 
-                RenderStartFrame(RenderStage.SaveFile);
-                // Save image.
-                var fileName = Path.Combine(
-                    LingoRuntime.MovieBasePath,
-                    "Levels",
-                    $"{Movie.gLoadedName}_{camIndex}.png");
+                    RenderStartFrame(RenderStage.SaveFile);
 
-                using var file = File.Create(fileName);
-                var image = _runtime.GetCastMember("finalImage")!.image!;
-                OnScreenRenderCompleted?.Invoke(camIndex, image);
+                    var image = _runtime.GetCastMember("finalImage")!.image!;
+                    OnScreenRenderCompleted?.Invoke(camIndex, image);
 
-                // Save the image
-                var imgSharp = image.GetImgSharpImage();
-                imgSharp.Metadata.GetPngMetadata().TextData.Add(
-                    new PngTextData("Software", PngSoftwareName, null, null));
-                imgSharp.SaveAsPng(file);
+                    // Clone, because the next camera overwrites the finalImage buffer.
+                    var imgSharp = image.GetImgSharpImage().CloneAs<Bgra32>();
+                    var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
+                    var ox = (int)Math.Round((double)cam.loch) - minX;
+                    var oy = (int)Math.Round((double)cam.locv) - minY;
 
-                _countCamerasDone += 1;
+                    rendered.Add((ox, oy, imgSharp));
+                    maxX = Math.Max(maxX, ox + imgSharp.Width);
+                    maxY = Math.Max(maxY, oy + imgSharp.Height);
+
+                    _countCamerasDone += 1;
+                }
+                catch (RenderCancelledException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    throw new RenderCameraException($"Exception on camera {camIndex}", e);
+                }
             }
-            catch (RenderCancelledException)
+
+            // Composite every camera into one big image.
+            using var stitched = new Image<Bgra32>(maxX, maxY);
+            foreach (var (ox, oy, img) in rendered)
             {
-                // Pass through.
-                throw;
+                stitched.Mutate(ctx => ctx.DrawImage(img, new Point(ox, oy), 1f));
             }
-            catch (Exception e)
-            {
-                throw new RenderCameraException($"Exception on camera {camIndex}", e);
-            }
+
+            var fileName = Path.Combine(
+                LingoRuntime.MovieBasePath,
+                "Levels",
+                $"{Movie.gLoadedName}.png");
+
+            Directory.CreateDirectory(Path.GetDirectoryName(fileName)!); 
+            
+            using var file = File.Create(fileName);
+            stitched.Metadata.GetPngMetadata().TextData.Add(
+                new PngTextData("Software", PngSoftwareName, null, null));
+            stitched.SaveAsPng(file);
+        }
+        finally
+        {
+            foreach (var (_, _, img) in rendered)
+                img.Dispose();
         }
 
         // Output level data.
         Movie.newmakelevel(Movie.gLoadedName);
     }
+
 
     private void RenderStart()
     {
