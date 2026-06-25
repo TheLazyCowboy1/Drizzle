@@ -26,8 +26,8 @@ on exitFrame me
     _movie.go(9)
   end if
   
-  cols = 100
-  rows = 60
+  cols = gLOprops.size.locH
+  rows = gLOprops.size.locV
   
   member("finalImage").image = image(cols*20, rows*20, 32)
   member("shadowImage").image  = image(cols*20, rows*20, 32)

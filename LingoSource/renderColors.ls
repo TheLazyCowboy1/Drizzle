@@ -33,7 +33,7 @@ on newFrame me
     gDecalColors.add(color(255, 255, 255))
   end if
   
-  repeat with q = 1 to 1400 then
+  repeat with q = 1 to gLOprops.size.locH*20 then
     
     layer: number = 1
     
@@ -214,7 +214,7 @@ on newFrame me
   c = c + 1
   
   
-  if c > 800 then
+  if c > gLOprops.size.locV*20 then
     c = 1
     keepLooping = 0
   end if

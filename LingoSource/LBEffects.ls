@@ -1489,8 +1489,8 @@ on closestCamera me, pos
   closest = 1000
   bestCam = 0
   repeat with camNum = 1 to gCameraProps.cameras.count then
-    if(me.seenByCamera(camNum, pos) = 1)and(diag(pos, gCameraProps.cameras[camNum]+point(1400/2, 800/2)) < closest )then
-      closest = diag(pos, gCameraProps.cameras[camNum]+point(1400/2, 800/2))
+    if(me.seenByCamera(camNum, pos) = 1)and(diag(pos, gCameraProps.cameras[camNum]+point(gLOprops.size.locH*20/2, gLOprops.size.locV*20/2)) < closest )then
+      closest = diag(pos, gCameraProps.cameras[camNum]+point(gLOprops.size.locH*20/2, gLOprops.size.locV*20/2))
       bestCam = camNum
     end if
   end repeat
@@ -1503,7 +1503,7 @@ on seenByCamera me, camNum, pos
   
   cameraPos = gCameraProps.cameras[camNum]
   
-  if pos.inside(rect(cameraPos.locH, cameraPos.locV, cameraPos.locH+1400, cameraPos.locV+800)+(rect(-15, -10, 15, 10)*20))then
+  if pos.inside(rect(cameraPos.locH, cameraPos.locV, cameraPos.locH+gLOprops.size.locH*20, cameraPos.locV+gLOprops.size.locV*20)+(rect(-15, -10, 15, 10)*20))then
     return 1
   else
     return 0
