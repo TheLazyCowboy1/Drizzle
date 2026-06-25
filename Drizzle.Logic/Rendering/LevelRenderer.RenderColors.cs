@@ -37,7 +37,7 @@ public sealed partial class LevelRenderer
         var bkgFix = (LingoNumber)Movie.bkgFix > 0;
 
         var c = (int)Movie.c - 1;
-        for (var q = 0; q < 2000; q++)
+        for (var q = 0; q < ((int)Movie.gLOprops.size.loch)*20; q++)
         {
             // NOTE: q and c are shifted by one compared to the original Lingo code.
             // This is much more sane, but keep it in mind.
@@ -237,7 +237,7 @@ public sealed partial class LevelRenderer
 
         Movie.c += 1;
 
-        if (Movie.c > 1200)
+        if (Movie.c > ((int)Movie.gLOprops.size.locv) * 20)
         {
             Movie.c += 1;
             Movie.keepLooping = (LingoNumber)0;
