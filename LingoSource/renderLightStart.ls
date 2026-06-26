@@ -79,13 +79,6 @@ on exitFrame(me)
 end
 
 on quadifyMember(me, mem, fac)
-  global gCameraProps, gCurrentRenderCamera
   newImg: image = member(mem).image.duplicate()
-  qd: list = [point(0, 0), point(newImg.width, 0), point(newImg.width, newImg.height), point(0, newImg.height)]
-  curcam = gCameraProps.quads[gCurrentRenderCamera]
-  repeat with q = 1 to 4
-    curcamq = curcam[q]
-    qd[q] = qd[q] + degToVec(curcamq[1]) * curcamq[2] * fac * 2.5--arbitrary number, seemed to give the right amount
-  end repeat
-  member(mem).image.copypixels(newImg, qd, newImg.rect)
+  member(mem).image.copypixels(newImg, newImg.rect - rect(fac, fac, 0, 0), newImg.rect)
 end
