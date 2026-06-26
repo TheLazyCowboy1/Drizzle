@@ -79,5 +79,6 @@ on exitFrame(me)
 end
 
 on quadifyMember(me, mem, fac)
-  -- no-op: full-level single pass, no per-camera warp
+  newImg: image = member(mem).image.duplicate()
+  member(mem).image.copypixels(newImg, newImg.rect - rect(fac, fac, 0, 0), newImg.rect)
 end
