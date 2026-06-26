@@ -12,8 +12,8 @@ on exitFrame(me)
   end if
   the randomSeed = gLOprops.tileSeed
   blkI2 = member("blackOutImg2").image
-  cols: number = 800+gLOprops.size.loch*20
-  rows: number = 400+gLOprops.size.locv*20
+  cols: number = gLOprops.size.loch*20
+  rows: number = gLOprops.size.locv*20
   member("layer0dc").image.copyPixels(blkI2, rect(0, 0, cols, rows), rect(0, 0, cols, rows), {#ink:36, #color:DRWhite})
   repeat with layer = 1 to 3
     repeat with q = 1 to gLOprops.size.loch
