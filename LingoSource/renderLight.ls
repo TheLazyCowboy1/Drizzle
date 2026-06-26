@@ -23,8 +23,8 @@ on exitFrame(me)
 end
 
 on newFrame(me)
-  cols: number = 2000
-  rows: number = 1200
+  cols: number = (gLOprops.size.locH + 30) * 20
+  rows: number = (gLOprops.size.locV + 20) * 20
   marginPixels: number = 150
   marginRect: rect = rect(0, 0, cols + marginPixels * 2, rows + marginPixels * 2)
   fullRect: rect = rect(0, 0, cols, rows)

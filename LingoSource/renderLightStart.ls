@@ -11,8 +11,14 @@ on exitFrame(me)
     _movie.go(9)
   end if
   the randomSeed = gLOprops.tileSeed
+  
+  cols: number = (gLOprops.size.locH + 30) * 20
+  rows: number = (gLOprops.size.locV + 20) * 20
+  marginPixels: number = 150
+  marginPixels2: number = marginPixels * 2
+  
   blkI2 = member("blackOutImg2").image
-  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, 2000, 1200), rect(0, 0, 2000, 1200), {#ink:36, #color:DRWhite})
+  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, cols, rows), rect(0, 0, cols, rows), {#ink:36, #color:DRWhite})
   repeat with layer = 1 to 3
     repeat with q = 1 to gLOprops.size.loch
       repeat with c = 1 to gLOprops.size.locv
@@ -32,10 +38,6 @@ on exitFrame(me)
       end repeat
     end repeat
   end repeat
-  cols: number = 2000
-  rows: number = 1200
-  marginPixels: number = 150
-  marginPixels2: number = marginPixels * 2
   if (gAnyDecals) then
     repeat with l = 0 to 29
       lm5 = (l - 5) * 1.5
@@ -77,13 +79,5 @@ on exitFrame(me)
 end
 
 on quadifyMember(me, mem, fac)
-  global gCameraProps, gCurrentRenderCamera
-  newImg: image = member(mem).image.duplicate()
-  qd: list = [point(0, 0), point(newImg.width, 0), point(newImg.width, newImg.height), point(0, newImg.height)]
-  curcam = gCameraProps.quads[gCurrentRenderCamera]
-  repeat with q = 1 to 4
-    curcamq = curcam[q]
-    qd[q] = qd[q] + degToVec(curcamq[1]) * curcamq[2] * fac * 2.5--arbitrary number, seemed to give the right amount
-  end repeat
-  member(mem).image.copypixels(newImg, qd, newImg.rect)
+  -- no-op: full-level single pass, no per-camera warp
 end

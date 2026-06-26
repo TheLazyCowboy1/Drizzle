@@ -177,7 +177,7 @@ on LRenderTileMaterial(l: number, nm: string, frntImg)
               if legalToPlace then
                 -- Place tile
                 rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-                if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+                if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                   frntImg = drawATileTile(rootPos.loch,rootPos.locV,l,testTile, frntImg, []) -- array argument required for chain holders. do not remove it!
                 end if
                 

@@ -1,0 +1,824 @@
+diff --git a/.gitignore b/.gitignore
+index be1134f..57bf511 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -15,4 +15,8 @@ Desktop.ini
+ # Temporary directory used when making release builds.
+ ReleaseBuild/
+ # Directory containing release builds.
+-Release/
+\ No newline at end of file
++Release/
++*.bak
++*.bak2
++*.bak3
++*.rar
+\ No newline at end of file
+diff --git a/Drizzle.Logic/Rendering/LevelRenderer.RenderColors.cs b/Drizzle.Logic/Rendering/LevelRenderer.RenderColors.cs
+index a37f6d7..f595a8f 100644
+--- a/Drizzle.Logic/Rendering/LevelRenderer.RenderColors.cs
++++ b/Drizzle.Logic/Rendering/LevelRenderer.RenderColors.cs
+@@ -35,9 +35,11 @@ public sealed partial class LevelRenderer
+         var grimeActive = (LingoNumber)Movie.grimeActive > 0;
+         var grimeOnGradients = (LingoNumber)Movie.grimeOnGradients > 0;
+         var bkgFix = (LingoNumber)Movie.bkgFix > 0;
++        var lvlW = (int)Movie.gLOprops.size.loch * 20;
++        var lvlH = (int)Movie.gLOprops.size.locv * 20;
+ 
+         var c = (int)Movie.c - 1;
+-        for (var q = 0; q < 1400; q++)
++        for (var q = 0; q < lvlW; q++)
+         {
+             // NOTE: q and c are shifted by one compared to the original Lingo code.
+             // This is much more sane, but keep it in mind.
+@@ -69,8 +71,8 @@ public sealed partial class LevelRenderer
+                 {
+                     foreach (var (dpX, dpY) in FogDisplacements)
+                     {
+-                        var dpQ = Math.Clamp(q + dpX, 0, 1339);
+-                        var dpC = Math.Clamp(c + dpY, 0, 799);
++                        var dpQ = Math.Clamp(q + dpX, 0, lvlW - 1);
++                        var dpC = Math.Clamp(c + dpY, 0, lvlH - 1);
+                         var otherFogFac = (255 - fogImage.getpixel(dpQ, dpC).RedByte) / 255.0f;
+                         otherFogFac = (otherFogFac - 0.0275f) / 0.9411f;
+                         if (Math.Abs(fogFac - otherFogFac) > 0.0333f)
+@@ -237,7 +239,7 @@ public sealed partial class LevelRenderer
+ 
+         Movie.c += 1;
+ 
+-        if (Movie.c > 800)
++        if (Movie.c > lvlH)
+         {
+             Movie.c += 1;
+             Movie.keepLooping = (LingoNumber)0;
+diff --git a/Drizzle.Logic/Rendering/LevelRenderer.RenderCore.cs b/Drizzle.Logic/Rendering/LevelRenderer.RenderCore.cs
+index 4b7ee03..5d91769 100644
+--- a/Drizzle.Logic/Rendering/LevelRenderer.RenderCore.cs
++++ b/Drizzle.Logic/Rendering/LevelRenderer.RenderCore.cs
+@@ -26,115 +26,35 @@ public sealed partial class LevelRenderer
+     {
+         RenderStart();
+ 
+-        // Set up camera order.
+-        List<int> camOrder;
+-        if (_singleCamera is { } s)
++        // Single full-level pass: cameras are ignored entirely.
++        RenderSetupCamera(0);
++        RenderLayers();
++        RenderPropsPreEffects();
++        RenderEffects();
++        RenderPropsPostEffects();
++        RenderLight();
++        RenderFinalize();
++        RenderColors();
++        RenderFinished();
++
++        RenderStartFrame(RenderStage.SaveFile);
++
++        var image = _runtime.GetCastMember("finalImage")!.image!;
++        OnScreenRenderCompleted?.Invoke(0, image);
++        _countCamerasDone = 1;
++
++        var fileName = Path.Combine(
++            LingoRuntime.MovieBasePath, "Levels", $"{Movie.gLoadedName}.png");
++        Directory.CreateDirectory(Path.GetDirectoryName(fileName)!);
++
++        using (var file = File.Create(fileName))
+         {
+-            camOrder = new List<int> { s + 1 };
+-        }
+-        else
+-        {
+-            camOrder = Enumerable.Range(1, (int)Movie.gCameraProps.cameras.count).ToList();
+-
+-            if (Movie.gPrioCam is not (null or 0))
+-            {
+-                camOrder.Remove(Movie.gPrioCam);
+-                camOrder.Insert(0, Movie.gPrioCam);
+-            }
+-        }
+-
+-        if (camOrder.Count == 0)
+-        {
+-            Movie.newmakelevel(Movie.gLoadedName);
+-            return;
+-        }
+-
+-        // Each camera's stored point is the top-left world-pixel of its view.
+-        // Compute the common origin so we can place every camera into one image.
+-        var minX = int.MaxValue;
+-        var minY = int.MaxValue;
+-        foreach (var camIndex in camOrder)
+-        {
+-            var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
+-            minX = Math.Min(minX, (int)Math.Round((double)cam.loch));
+-            minY = Math.Min(minY, (int)Math.Round((double)cam.locv));
+-        }
+-
+-        // Hold each rendered camera until all are done (sizes only known after render).
+-        var rendered = new List<(int ox, int oy, Image<Bgra32> img)>();
+-        var maxX = int.MinValue;
+-        var maxY = int.MinValue;
+-
+-        try
+-        {
+-            foreach (var camIndex in camOrder)
+-            {
+-                try
+-                {
+-                    RenderSetupCamera(camIndex);
+-
+-                    RenderLayers();
+-                    RenderPropsPreEffects();
+-                    RenderEffects();
+-                    RenderPropsPostEffects();
+-                    RenderLight();
+-                    RenderFinalize();
+-                    RenderColors();
+-                    RenderFinished();
+-
+-                    RenderStartFrame(RenderStage.SaveFile);
+-
+-                    var image = _runtime.GetCastMember("finalImage")!.image!;
+-                    OnScreenRenderCompleted?.Invoke(camIndex, image);
+-
+-                    // Clone, because the next camera overwrites the finalImage buffer.
+-                    var imgSharp = image.GetImgSharpImage().CloneAs<Bgra32>();
+-                    var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
+-                    var ox = (int)Math.Round((double)cam.loch) - minX;
+-                    var oy = (int)Math.Round((double)cam.locv) - minY;
+-
+-                    rendered.Add((ox, oy, imgSharp));
+-                    maxX = Math.Max(maxX, ox + imgSharp.Width);
+-                    maxY = Math.Max(maxY, oy + imgSharp.Height);
+-
+-                    _countCamerasDone += 1;
+-                }
+-                catch (RenderCancelledException)
+-                {
+-                    throw;
+-                }
+-                catch (Exception e)
+-                {
+-                    throw new RenderCameraException($"Exception on camera {camIndex}", e);
+-                }
+-            }
+-
+-            // Composite every camera into one big image.
+-            using var stitched = new Image<Bgra32>(maxX, maxY);
+-            foreach (var (ox, oy, img) in rendered)
+-            {
+-                stitched.Mutate(ctx => ctx.DrawImage(img, new Point(ox, oy), 1f));
+-            }
+-
+-            var fileName = Path.Combine(
+-                LingoRuntime.MovieBasePath,
+-                "Levels",
+-                $"{Movie.gLoadedName}.png");
+-
+-            Directory.CreateDirectory(Path.GetDirectoryName(fileName)!); 
+-            
+-            using var file = File.Create(fileName);
+-            stitched.Metadata.GetPngMetadata().TextData.Add(
++            var imgSharp = image.GetImgSharpImage();
++            imgSharp.Metadata.GetPngMetadata().TextData.Add(
+                 new PngTextData("Software", PngSoftwareName, null, null));
+-            stitched.SaveAsPng(file);
+-        }
+-        finally
+-        {
+-            foreach (var (_, _, img) in rendered)
+-                img.Dispose();
++            imgSharp.SaveAsPng(file);
+         }
+ 
+-        // Output level data.
+         Movie.newmakelevel(Movie.gLoadedName);
+     }
+ 
+@@ -149,25 +69,18 @@ public sealed partial class LevelRenderer
+     {
+         RenderStartFrame(RenderStage.CameraSetup);
+ 
+-        var camera = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
+         _cameraIndex = camIndex;
+         Movie.gCurrentRenderCamera = new LingoNumber(camIndex);
+-        Movie.gRenderCameraTilePos =
+-            new LingoPoint(
+-                (camera.loch / (LingoNumber)20.0 - (LingoNumber)0.49999).integer,
+-                (camera.locv / (LingoNumber)20.0 - (LingoNumber)0.49999).integer);
+-
+-        Movie.gRenderCameraPixelPos = camera - (Movie.gRenderCameraTilePos * 20);
+-        Movie.gRenderCameraPixelPos.loch = Movie.gRenderCameraPixelPos.loch.integer;
+-        Movie.gRenderCameraPixelPos.locv = Movie.gRenderCameraPixelPos.locv.integer;
+ 
+-        Movie.gRenderCameraTilePos += new LingoPoint(-15, -10);
++        // Fixed pseudo-camera covering the whole level (15/10-tile margin).
++        Movie.gRenderCameraTilePos = new LingoPoint(-15, -10);
++        Movie.gRenderCameraPixelPos = new LingoPoint(0, 0);
+     }
+ 
+     private void RenderLayers()
+     {
+-        const int cols = 100;
+-        const int rows = 60;
++        int cols = (int)Movie.gLOprops.size.loch + 30;
++        int rows = (int)Movie.gLOprops.size.locv + 20;
+ 
+         RenderStartFrame(RenderStage.RenderLayers);
+ 
+diff --git a/LingoSource/JoarEffects.ls b/LingoSource/JoarEffects.ls
+index 0c43ba0..a40ab96 100644
+--- a/LingoSource/JoarEffects.ls
++++ b/LingoSource/JoarEffects.ls
+@@ -1900,7 +1900,8 @@ end
+ 
+ 
+ on closestCamera me, pos
+-  global gCameraProps
++  global gCameraProps, gCurrentRenderCamera
++  if gCurrentRenderCamera = 0 then return 1
+   closest = 1000
+   bestCam = 0
+   repeat with camNum = 1 to gCameraProps.cameras.count then
+@@ -1914,6 +1915,8 @@ on closestCamera me, pos
+ end
+ 
+ on seenByCamera me, camNum, pos
++  global gCurrentRenderCamera
++  if gCurrentRenderCamera = 0 then return 1
+   global gCameraProps
+   
+   cameraPos = gCameraProps.cameras[camNum]
+diff --git a/LingoSource/LBEffects.ls b/LingoSource/LBEffects.ls
+index 490d666..a4b054f 100644
+--- a/LingoSource/LBEffects.ls
++++ b/LingoSource/LBEffects.ls
+@@ -1485,7 +1485,8 @@ on applyRingChains me, q, c, eftc
+ end
+ 
+ on closestCamera me, pos
+-  global gCameraProps
++  global gCameraProps, gCurrentRenderCamera
++  if gCurrentRenderCamera = 0 then return 1
+   closest = 1000
+   bestCam = 0
+   repeat with camNum = 1 to gCameraProps.cameras.count then
+@@ -1499,6 +1500,8 @@ on closestCamera me, pos
+ end
+ 
+ on seenByCamera me, camNum, pos
++  global gCurrentRenderCamera
++  if gCurrentRenderCamera = 0 then return 1
+   global gCameraProps
+   
+   cameraPos = gCameraProps.cameras[camNum]
+diff --git a/LingoSource/LMats.ls b/LingoSource/LMats.ls
+index bcd20c4..9cda556 100644
+--- a/LingoSource/LMats.ls
++++ b/LingoSource/LMats.ls
+@@ -177,7 +177,7 @@ on LRenderTileMaterial(l: number, nm: string, frntImg)
+               if legalToPlace then
+                 -- Place tile
+                 rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-                if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++                if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                   frntImg = drawATileTile(rootPos.loch,rootPos.locV,l,testTile, frntImg, []) -- array argument required for chain holders. do not remove it!
+                 end if
+                 
+diff --git a/LingoSource/finalize.ls b/LingoSource/finalize.ls
+index 10ffaf0..bcfe0b9 100644
+--- a/LingoSource/finalize.ls
++++ b/LingoSource/finalize.ls
+@@ -26,12 +26,12 @@ on exitFrame me
+     _movie.go(9)
+   end if
+   
+-  cols = 100
+-  rows = 60
++  cols = gLOprops.size.locH + 30
++  rows = gLOprops.size.locV + 20
+   
+-  member("finalImage").image = image(1400, 800, 32)
+-  member("shadowImage").image  = image(1400, 800, 32)
+-  member("finalDecalImage").image  = image(1400, 800, 32)
++  member("finalImage").image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
++  member("shadowImage").image  = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
++  member("finalDecalImage").image  = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
+   gDecalColors = []
+   
+   extrarect = rect(-50, -50, 50, 50)
+@@ -48,23 +48,23 @@ on exitFrame me
+     member("dumpImage").image.copyPixels(member("layer"&string(30-q)).image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
+     member("layer"&string(30-q)).image.copyPixels( member("dumpImage").image, member("dumpImage").image.rect, member("dumpImage").image.rect)
+     
+-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-    member("shadowImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+-    member("shadowImage").image.copyPixels(member("layer"&string(30-q)&"sh").image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
++    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++    member("shadowImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
++    member("shadowImage").image.copyPixels(member("layer"&string(30-q)&"sh").image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+   end repeat
+   
+-  inv = image(1400, 800, 1)
+-  inv.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#color:255})
+-  inv.copyPixels(member("shadowImage").image, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
+-  member("shadowImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800))
++  inv = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 1)
++  inv.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#color:255})
++  inv.copyPixels(member("shadowImage").image, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
++  member("shadowImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)))
+   
+   
+   
+   
+-  member("fogImage").image = image(1400,800,32)
++  member("fogImage").image = image((gLOprops.size.locH*20),(gLOprops.size.locV*20),32)
+   
+-  member("dpImage").image = image(1400,800,32)
+-  member("dpImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#color:255})
++  member("dpImage").image = image((gLOprops.size.locH*20),(gLOprops.size.locV*20),32)
++  member("dpImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#color:255})
+   
+   smpl = image(4,1,32)
+   smpl2 = image(30, 1, 32)
+@@ -78,18 +78,18 @@ on exitFrame me
+     
+     
+     
+-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-    member("dpImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
++    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++    member("dpImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+     smpl.copyPixels(DRPxl, rect(smplPs,0,4,1), rect(0,0,1,1), {#color:0})
+     
+     if (dp+5=12)or(dp+5=8)or(dp+5=4)then
+       smpl.copyPixels(DRPxl, rect(0,0,4,1), rect(0,0,1,1), {#blend:10, #color:255})
+       smplPs = smplPs + 1
+-      member("dpImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#blend:10, #color:255})
++      member("dpImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#blend:10, #color:255})
+     end if
+     
+-    member("fogImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+-    member("fogImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#blend:5, #color:255})
++    member("fogImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
++    member("fogImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#blend:5, #color:255})
+     smpl2.setPixel(q-1, 0, color(255, 255, 255))
+     smpl2.copyPixels(DRPxl, rect(0,0,30,1), rect(0,0,1,1), {#blend:5, #color:255})
+   end repeat
+@@ -105,8 +105,8 @@ on exitFrame me
+ 
+   repeat with q2 = 1 to 25 then
+     dp = 30-q2-5
+-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-    member("finalImage").image.copyPixels(member("layer"&string(30-q2)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
++    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++    member("finalImage").image.copyPixels(member("layer"&string(30-q2)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+     if 30-q2 = 10 then
+       inv = makeSilhoutteFromImg(member("finalImage").image, 1)
+       repeat with q = 1 to gLOprops.size.loch then
+@@ -117,7 +117,7 @@ on exitFrame me
+           end if
+         end repeat
+       end repeat 
+-      member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
++      member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
+       
+     else if 30-q2 = 20 then
+       
+@@ -130,7 +130,7 @@ on exitFrame me
+           end if
+         end repeat
+       end repeat 
+-      member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
++      member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
+       
+     end if
+   end repeat
+@@ -138,8 +138,8 @@ on exitFrame me
+   
+   repeat with q = 25 to 30 then
+     dp = 30-q-5
+-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-    member("finalImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
++    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++    member("finalImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+   end repeat
+   
+   
+@@ -152,25 +152,25 @@ on exitFrame me
+       end if
+     end repeat
+   end repeat 
+-  member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
++  member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
+   
+   
+   
+-  member("rainBowMask").image = image(1400, 800, 1)
++  member("rainBowMask").image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 1)
+   repeat with L in ["A", "B"] then
+-    member("flattenedGradient" & L).image = image(1400, 800, 16)
++    member("flattenedGradient" & L).image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 16)
+     repeat with bd = 0 to 29 then
+       lr = 29-bd
+       dp = lr-5
+       
+       member("dumpImage").image.copyPixels(member("gradient" & L & string(lr)).image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
+-      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-      getRect = rect(0,0,1400,800)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
++      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++      getRect = rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
+       
+       member("flattenedGradient" & L).image.copyPixels(member("dumpImage").image, pstRct, getRect, {#maskImage:makeSilhoutteFromImg(member("layer" & lr).image, 0).createMask()})
+       
+       member("flattenedGradient" & L).image.setPixel(0,0, color(0,0,0))
+-      member("flattenedGradient" & L).image.setPixel(1400-1,800-1, color(0,0,0))
++      member("flattenedGradient" & L).image.setPixel((gLOprops.size.locH*20)-1,(gLOprops.size.locV*20)-1, color(0,0,0))
+     end repeat
+     
+   end repeat
+@@ -180,13 +180,13 @@ on exitFrame me
+       lr = 29-bd
+       dp = lr-5
+       member("dumpImage").image.copyPixels(member("layer" & string(lr) & "dc").image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
+-      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
+-      getRect = rect(0,0,1400,800)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
++      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
++      getRect = rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
+       
+       member("finalDecalImage").image.copyPixels(member("dumpImage").image, pstRct, getRect, {#maskImage:makeSilhoutteFromImg(member("layer" & lr).image, 0).createMask()})
+       
+       member("finalDecalImage").image.setPixel(0,0, color(0,0,0))
+-      member("finalDecalImage").image.setPixel(1400-1,800-1, color(0,0,0))
++      member("finalDecalImage").image.setPixel((gLOprops.size.locH*20)-1,(gLOprops.size.locV*20)-1, color(0,0,0))
+     end repeat
+   end if
+   c = 1
+diff --git a/LingoSource/levelRendering.ls b/LingoSource/levelRendering.ls
+index b0628d1..49ee8a9 100644
+--- a/LingoSource/levelRendering.ls
++++ b/LingoSource/levelRendering.ls
+@@ -18,8 +18,8 @@ on renderLevel()
+   gRenderTrashProps = []
+   
+   RENDER = 0
+-  cols = 100--gLOprops.size.loch
+-  rows = 60--gLOprops.size.locv
++  cols = gLOprops.size.locH + 30
++  rows = gLOprops.size.locV + 20
+   
+   -- member("bkgBkgImage").image = image(cols*20, rows*20, 16)
+   member("finalImage").image = image(cols*20, rows*20, 32)
+@@ -43,8 +43,8 @@ end
+ 
+ on setUpLayer(layer)
+   -- global gLoprops
+-  cols = 100--gLoprops.size.loch
+-  rows = 60--gLoprops.size.locv
++  cols = gLOprops.size.locH + 30
++  rows = gLOprops.size.locV + 20
+   tlset = member("tileSet1").image.duplicate()
+   if layer = 1 then
+     dpt = 0
+@@ -311,7 +311,7 @@ on setUpLayer(layer)
+           
+         "ceramicType":
+           repeat with tl in drawMaterials[q][2] then
+-            if (point(tl[2], tl[3]).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(100, 60)))) and (gDRMatFixes = FALSE) and (afaMvLvlEdit(point(tl[2], tl[3]), layer) <> 1) then
++            if (point(tl[2], tl[3]).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) and (gDRMatFixes = FALSE) and (afaMvLvlEdit(point(tl[2], tl[3]), layer) <> 1) then
+               frntImg = drawATileMaterial(tl[2], tl[3], layer, "Standard", frntImg)
+             else if afaMvLvlEdit(point(tl[2], tl[3]), layer)=1 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=2 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=3 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=4 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=5 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=6 then
+               drawCeramicTypeTile(drawMaterials[q][1], point(tl[2], tl[3]), layer, frntImg)
+@@ -2037,7 +2037,7 @@ end
+ on drawHorizontalSurface(row: number, dpt: number, tl)
+   -- if row < 10 then
+   pnt1 = point(0, row*20)
+-  pnt2 = point(gLOprops.size.locH*20, row*20)
++  pnt2 = point((gLOprops.size.locH+30)*20, row*20)
+   
+   repeat with q = 1 to 10 then
+     dp = dpt + 10 - q
+@@ -2050,7 +2050,7 @@ on drawHorizontalSurface(row: number, dpt: number, tl)
+   end repeat
+   -- else
+   pnt1 = point(0, (row-1)*20)
+-  pnt2 = point(gLOprops.size.locH*20, (row-1)*20)
++  pnt2 = point((gLOprops.size.locH+30)*20, (row-1)*20)
+   repeat with q = 1 to 10 then
+     dp = dpt + 10 - q
+     --   pt1 = depthPnt(pnt1, dp-5)
+@@ -2066,7 +2066,7 @@ end
+ on drawVerticalSurface(col: number, dpt: number, tl)
+   --if col < 26 then
+   pnt1 = point(col*20, 0)
+-  pnt2 = point(col*20, gLOprops.size.locV*20)
++  pnt2 = point(col*20, (gLOprops.size.locV+20)*20)
+   repeat with q = 1 to 10 then
+     dp = dpt + 10 - q
+     --   pt1 = depthPnt(pnt1, dp-5)
+@@ -2078,7 +2078,7 @@ on drawVerticalSurface(col: number, dpt: number, tl)
+   end repeat
+   --else
+   pnt1 = point((col-1)*20, 0)
+-  pnt2 = point((col-1)*20, gLOprops.size.locV*20)
++  pnt2 = point((col-1)*20, (gLOprops.size.locV+20)*20)
+   repeat with q = 1 to 10 then
+     dp = dpt + 10 - q
+     --  pt1 = depthPnt(pnt1, dp-5)
+@@ -3881,7 +3881,7 @@ on renderTileMaterial(layer, material, frntImg)
+             tlsOrdered.add([random(gLOprops.size.loch + gLOprops.size.locV), point(q, c)])
+           else if (gDRMatFixes) or ((material <> "Tiled Stone") and (material <> "Chaotic Stone") and (material <> "Random Machines") and (material <> "3DBricks")) then
+             tlsOrdered.add([random(gLOprops.size.loch + gLOprops.size.locV), point(q, c)])
+-          else if (point(q, c).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(100, 60)))) then
++          else if (point(q, c).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
+             frntImg = drawATileMaterial(q, c, layer, "Standard", frntImg)
+           end if
+         end if
+@@ -3945,7 +3945,7 @@ on renderTileMaterial(layer, material, frntImg)
+             hts = hts + (tls.getPos(tl+dir)>0)*(delL.getPos(tl+dir)=0)
+           end repeat
+           if hts = 3 then
+-            if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
++            if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
+               frntImg = drawATileTile(tl.loch,tl.locV,layer, gTiles[stCat].tls[2], frntImg)
+             end if
+             repeat with dir in [point(1,0), point(0,1), point(1,1)] then
+@@ -3966,7 +3966,7 @@ on renderTileMaterial(layer, material, frntImg)
+       repeat while tls.count > 0 then
+         the randomSeed  = gLOprops.tileSeed + tls.count
+         tl = tls[random(tls.count)]
+-        if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
++        if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
+           frntImg = drawATileTile(tl.locH,tl.locV,layer, gTiles[stCat].tls[1], frntImg)
+         end if
+         tls.deleteOne(tl)
+@@ -4161,7 +4161,7 @@ on renderTileMaterial(layer, material, frntImg)
+             
+             if(legalToPlace)then
+               rootPos: point = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
+               end if
+               repeat with a = 0 to testTile.sz.locH-1 then
+@@ -4290,7 +4290,7 @@ on renderTileMaterial(layer, material, frntImg)
+             
+             if(legalToPlace)then
+               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
+               end if
+               repeat with a = 0 to testTile.sz.locH-1 then
+@@ -4418,7 +4418,7 @@ on renderTileMaterial(layer, material, frntImg)
+             
+             if(legalToPlace)then
+               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
+               end if
+               repeat with a = 0 to testTile.sz.locH-1 then
+@@ -4547,7 +4547,7 @@ on renderTileMaterial(layer, material, frntImg)
+             
+             if(legalToPlace)then
+               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
+               end if
+               repeat with a = 0 to testTile.sz.locH-1 then
+@@ -4671,7 +4671,7 @@ on renderTileMaterial(layer, material, frntImg)
+             end if
+             if (legalToPlace) then
+               rootPos = tl + point(((testTile.sz.locH.float / 2.0) + 0.4999).integer - 1, ((testTile.sz.locV.float / 2.0) + 0.4999).integer - 1)
+-              if (rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
++              if (rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
+                 frntImg = drawATileTile(rootPos.locH, rootPos.locV, layer, testTile, frntImg) 
+               end if
+               repeat with a = 0 to testTile.sz.locH - 1
+@@ -4811,7 +4811,7 @@ on renderTileMaterial(layer, material, frntImg)
+             
+             if(legalToPlace)then
+               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
+               end if
+               repeat with a = 0 to testTile.sz.locH-1 then
+@@ -5144,7 +5144,7 @@ on renderTileMaterial(layer, material, frntImg)
+           if legalToPlace then
+             -- Place tile
+             rootPos: point = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
+-            if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
++            if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
+               frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg, [])
+             end if
+             
+diff --git a/LingoSource/renderEffects.ls b/LingoSource/renderEffects.ls
+index 0eb4f55..40b8cdd 100644
+--- a/LingoSource/renderEffects.ls
++++ b/LingoSource/renderEffects.ls
+@@ -42,7 +42,7 @@ on newFrame me
+   end if
+   --  if we've rendered all the rows on this screen, and not moving onto the next screen, or we've reached the end of the screen,
+   efcsc = gEEprops.effects[r].crossScreen
+-  if ( (vertRepeater > 60) and (efcsc = 0) ) or ( (vertRepeater > gLOprops.size.locV) and (efcsc = 1)) then
++  if ( (vertRepeater > (gLOprops.size.locV + 20)) and (efcsc = 0) ) or ( (vertRepeater > gLOprops.size.locV) and (efcsc = 1)) then
+     me.exitEffect() -- then stop rendering this effect,
+     r = r + 1       -- and move onto the next one
+     
+@@ -60,7 +60,7 @@ on newFrame me
+     sprite(59).locV = vertRepeater*20 -- i think this moves that big line across the screen that shows where the effect is being applied? no clue.
+     
+     -- render all of the tiles within this row.
+-    repeat with q = 1 to 100
++    repeat with q = 1 to (gLOprops.size.locH + 30)
+       q2 = q + gRenderCameraTilePos.locH
+       c2 = vertRepeater + gRenderCameraTilePos.locV
+       if (q2 > 0) then
+@@ -545,8 +545,8 @@ on initEffect me
+   
+   case effectr.nm of
+     "BlackGoo":
+-      cols = 100
+-      rows = 60
++      cols = gLOprops.size.locH + 30
++      rows = gLOprops.size.locV + 20
+       
+       member("blackOutImg1").image = image(cols*20, rows*20, 32)
+       blk1 = member("blackOutImg1").image
+@@ -559,8 +559,8 @@ on initEffect me
+       
+       global gRenderCameraTilePos, gRenderCameraPixelPos
+       
+-      repeat with q = 1 to 100
+-        repeat with c = 1 to 60
++      repeat with q = 1 to cols
++        repeat with c = 1 to rows
+           q2 = q + gRenderCameraTilePos.locH
+           c2 = c + gRenderCameraTilePos.locV
+           if(q2 < 1)or(q2 > gLOprops.size.locH)or(c2 < 1)or(c2 > gLOprops.size.locV)then
+@@ -600,8 +600,8 @@ on initEffect me
+       end repeat
+       
+     "Super BlackGoo":
+-      cols = 100
+-      rows = 60
++      cols = gLOprops.size.locH + 30
++      rows = gLOprops.size.locV + 20
+       
+       member("blackOutImg1").image = image(cols*20, rows*20, 32)
+       blk1 = member("blackOutImg1").image
+@@ -614,8 +614,8 @@ on initEffect me
+       
+       global gRenderCameraTilePos, gRenderCameraPixelPos
+       
+-      repeat with q = 1 to 100
+-        repeat with c = 1 to 60
++      repeat with q = 1 to cols
++        repeat with c = 1 to rows
+           q2 = q + gRenderCameraTilePos.locH
+           c2 = c + gRenderCameraTilePos.locV
+           if(q2 < 1)or(q2 > gLOprops.size.locH)or(c2 < 1)or(c2 > gLOprops.size.locV)then
+@@ -808,8 +808,8 @@ on exitEffect me
+     "BlackGoo":
+       
+       lr0 = member("layer0").image
+-      lr0.copyPixels(member("blackOutImg1").image, rect(0,0,100*20, 60*20), rect(0,0,100*20, 60*20), {#ink:36, #color:color(0, 255, 0)})
+-      lr0.copyPixels(member("blackOutImg2").image, rect(0,0,100*20, 60*20), rect(0,0,100*20, 60*20), {#ink:36, #color:color(255, 0, 0)})
++      lr0.copyPixels(member("blackOutImg1").image, rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), {#ink:36, #color:color(0, 255, 0)})
++      lr0.copyPixels(member("blackOutImg2").image, rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), {#ink:36, #color:color(255, 0, 0)})
+       
+       
+       member("blackOutImg1").image = image(1, 1, 1)
+@@ -820,8 +820,8 @@ on exitEffect me
+     "Super BlackGoo":
+       
+       lr0 = member("layer0").image
+-      lr0.copyPixels(member("blackOutImg1").image, rect(0,0,100*20, 60*20), rect(0,0,100*20, 60*20), {#ink:36, #color:color(0, 255, 0)})
+-      lr0.copyPixels(member("blackOutImg2").image, rect(0,0,100*20, 60*20), rect(0,0,100*20, 60*20), {#ink:36, #color:color(255, 0, 0)})
++      lr0.copyPixels(member("blackOutImg1").image, rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), {#ink:36, #color:color(0, 255, 0)})
++      lr0.copyPixels(member("blackOutImg2").image, rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), rect(0,0,(gLOprops.size.locH+30)*20, (gLOprops.size.locV+20)*20), {#ink:36, #color:color(255, 0, 0)})
+       
+       
+       member("blackOutImg1").image = image(1, 1, 1)
+diff --git a/LingoSource/renderLayers.ls b/LingoSource/renderLayers.ls
+index b537656..874886a 100644
+--- a/LingoSource/renderLayers.ls
++++ b/LingoSource/renderLayers.ls
+@@ -1,6 +1,7 @@
+ global c
+ 
+ on exitFrame(me)
++  global gLOprops
+   if (checkMinimize()) then
+     _player.appMinimize()
+   end if
+@@ -10,14 +11,16 @@ on exitFrame(me)
+   if (checkExitRender()) then
+     _movie.go(9)
+   end if
++  lvlW = (gLOprops.size.locH + 30) * 20
++  lvlH = (gLOprops.size.locV + 20) * 20
+   repeat with q = 0 to 29
+     strq = string(q)
+-    member("layer" & strq).image = image(2000, 1200, 32)
+-    member("gradientA" & strq).image = image(2000, 1200, 16)
+-    member("gradientB" & strq).image = image(2000, 1200, 16)
+-    member("layer" & strq & "dc").image = image(2000, 1200, 32)
++    member("layer" & strq).image = image(lvlW, lvlH, 32)
++    member("gradientA" & strq).image = image(lvlW, lvlH, 16)
++    member("gradientB" & strq).image = image(lvlW, lvlH, 16)
++    member("layer" & strq & "dc").image = image(lvlW, lvlH, 32)
+   end repeat
+-  member("rainBowMask").image = image(2000, 1200, 32)
++  member("rainBowMask").image = image(lvlW, lvlH, 32)
+   renderLevel()
+   c = 1
+ end
+\ No newline at end of file
+diff --git a/LingoSource/renderLight.ls b/LingoSource/renderLight.ls
+index b83a28c..2b29a76 100644
+--- a/LingoSource/renderLight.ls
++++ b/LingoSource/renderLight.ls
+@@ -23,8 +23,8 @@ on exitFrame(me)
+ end
+ 
+ on newFrame(me)
+-  cols: number = 2000
+-  rows: number = 1200
++  cols: number = (gLOprops.size.locH + 30) * 20
++  rows: number = (gLOprops.size.locV + 20) * 20
+   marginPixels: number = 150
+   marginRect: rect = rect(0, 0, cols + marginPixels * 2, rows + marginPixels * 2)
+   fullRect: rect = rect(0, 0, cols, rows)
+diff --git a/LingoSource/renderLightStart.ls b/LingoSource/renderLightStart.ls
+index d01d203..181bb4f 100644
+--- a/LingoSource/renderLightStart.ls
++++ b/LingoSource/renderLightStart.ls
+@@ -11,8 +11,14 @@ on exitFrame(me)
+     _movie.go(9)
+   end if
+   the randomSeed = gLOprops.tileSeed
++  
++  cols: number = (gLOprops.size.locH + 30) * 20
++  rows: number = (gLOprops.size.locV + 20) * 20
++  marginPixels: number = 150
++  marginPixels2: number = marginPixels * 2
++  
+   blkI2 = member("blackOutImg2").image
+-  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, 2000, 1200), rect(0, 0, 2000, 1200), {#ink:36, #color:DRWhite})
++  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, cols, rows), rect(0, 0, cols, rows), {#ink:36, #color:DRWhite})
+   repeat with layer = 1 to 3
+     repeat with q = 1 to gLOprops.size.loch
+       repeat with c = 1 to gLOprops.size.locv
+@@ -32,10 +38,6 @@ on exitFrame(me)
+       end repeat
+     end repeat
+   end repeat
+-  cols: number = 2000
+-  rows: number = 1200
+-  marginPixels: number = 150
+-  marginPixels2: number = marginPixels * 2
+   if (gAnyDecals) then
+     repeat with l = 0 to 29
+       lm5 = (l - 5) * 1.5
+@@ -77,13 +79,5 @@ on exitFrame(me)
+ end
+ 
+ on quadifyMember(me, mem, fac)
+-  global gCameraProps, gCurrentRenderCamera
+-  newImg: image = member(mem).image.duplicate()
+-  qd: list = [point(0, 0), point(newImg.width, 0), point(newImg.width, newImg.height), point(0, newImg.height)]
+-  curcam = gCameraProps.quads[gCurrentRenderCamera]
+-  repeat with q = 1 to 4
+-    curcamq = curcam[q]
+-    qd[q] = qd[q] + degToVec(curcamq[1]) * curcamq[2] * fac * 2.5--arbitrary number, seemed to give the right amount
+-  end repeat
+-  member(mem).image.copypixels(newImg, qd, newImg.rect)
++  -- no-op: full-level single pass, no per-camera warp
+ end
+\ No newline at end of file
+diff --git a/LingoSource/renderProps.ls b/LingoSource/renderProps.ls
+index 34f8b68..a15075f 100644
+--- a/LingoSource/renderProps.ls
++++ b/LingoSource/renderProps.ls
+@@ -84,6 +84,7 @@ end
+ 
+ on ShouldThisPropRender(prop, qd: list, settings)
+   type return: number
++  global gLOprops
+   if (settings.renderTime <> afterEffects) then
+     return FALSE
+   end if
+@@ -99,7 +100,7 @@ on ShouldThisPropRender(prop, qd: list, settings)
+       dig = Diag(mdPoint, qd[q])
+     end if
+   end repeat
+-  return diag(mdPoint, closestPntInRect(rect(-50, -100, 2050, 1100), mdPoint)) <= dig
++  return diag(mdPoint, closestPntInRect(rect(-50, -100, (gLOprops.size.locH + 30) * 20 + 50, (gLOprops.size.locV + 20) * 20 + 100), mdPoint)) <= dig
+ end
+ 
+ on updateText(me)

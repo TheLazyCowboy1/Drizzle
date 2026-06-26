@@ -18,8 +18,8 @@ on renderLevel()
   gRenderTrashProps = []
   
   RENDER = 0
-  cols = 100--gLOprops.size.loch
-  rows = 60--gLOprops.size.locv
+  cols = gLOprops.size.locH + 30
+  rows = gLOprops.size.locV + 20
   
   -- member("bkgBkgImage").image = image(cols*20, rows*20, 16)
   member("finalImage").image = image(cols*20, rows*20, 32)
@@ -43,8 +43,8 @@ end
 
 on setUpLayer(layer)
   -- global gLoprops
-  cols = 100--gLoprops.size.loch
-  rows = 60--gLoprops.size.locv
+  cols = gLOprops.size.locH + 30
+  rows = gLOprops.size.locV + 20
   tlset = member("tileSet1").image.duplicate()
   if layer = 1 then
     dpt = 0
@@ -311,7 +311,7 @@ on setUpLayer(layer)
           
         "ceramicType":
           repeat with tl in drawMaterials[q][2] then
-            if (point(tl[2], tl[3]).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(100, 60)))) and (gDRMatFixes = FALSE) and (afaMvLvlEdit(point(tl[2], tl[3]), layer) <> 1) then
+            if (point(tl[2], tl[3]).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) and (gDRMatFixes = FALSE) and (afaMvLvlEdit(point(tl[2], tl[3]), layer) <> 1) then
               frntImg = drawATileMaterial(tl[2], tl[3], layer, "Standard", frntImg)
             else if afaMvLvlEdit(point(tl[2], tl[3]), layer)=1 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=2 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=3 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=4 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=5 or afaMvLvlEdit(point(tl[2], tl[3]), layer)=6 then
               drawCeramicTypeTile(drawMaterials[q][1], point(tl[2], tl[3]), layer, frntImg)
@@ -2037,7 +2037,7 @@ end
 on drawHorizontalSurface(row: number, dpt: number, tl)
   -- if row < 10 then
   pnt1 = point(0, row*20)
-  pnt2 = point(gLOprops.size.locH*20, row*20)
+  pnt2 = point((gLOprops.size.locH+30)*20, row*20)
   
   repeat with q = 1 to 10 then
     dp = dpt + 10 - q
@@ -2050,7 +2050,7 @@ on drawHorizontalSurface(row: number, dpt: number, tl)
   end repeat
   -- else
   pnt1 = point(0, (row-1)*20)
-  pnt2 = point(gLOprops.size.locH*20, (row-1)*20)
+  pnt2 = point((gLOprops.size.locH+30)*20, (row-1)*20)
   repeat with q = 1 to 10 then
     dp = dpt + 10 - q
     --   pt1 = depthPnt(pnt1, dp-5)
@@ -2066,7 +2066,7 @@ end
 on drawVerticalSurface(col: number, dpt: number, tl)
   --if col < 26 then
   pnt1 = point(col*20, 0)
-  pnt2 = point(col*20, gLOprops.size.locV*20)
+  pnt2 = point(col*20, (gLOprops.size.locV+20)*20)
   repeat with q = 1 to 10 then
     dp = dpt + 10 - q
     --   pt1 = depthPnt(pnt1, dp-5)
@@ -2078,7 +2078,7 @@ on drawVerticalSurface(col: number, dpt: number, tl)
   end repeat
   --else
   pnt1 = point((col-1)*20, 0)
-  pnt2 = point((col-1)*20, gLOprops.size.locV*20)
+  pnt2 = point((col-1)*20, (gLOprops.size.locV+20)*20)
   repeat with q = 1 to 10 then
     dp = dpt + 10 - q
     --  pt1 = depthPnt(pnt1, dp-5)
@@ -3881,7 +3881,7 @@ on renderTileMaterial(layer, material, frntImg)
             tlsOrdered.add([random(gLOprops.size.loch + gLOprops.size.locV), point(q, c)])
           else if (gDRMatFixes) or ((material <> "Tiled Stone") and (material <> "Chaotic Stone") and (material <> "Random Machines") and (material <> "3DBricks")) then
             tlsOrdered.add([random(gLOprops.size.loch + gLOprops.size.locV), point(q, c)])
-          else if (point(q, c).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(100, 60)))) then
+          else if (point(q, c).inside(rect(gRenderCameraTilePos, gRenderCameraTilePos + point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
             frntImg = drawATileMaterial(q, c, layer, "Standard", frntImg)
           end if
         end if
@@ -3945,7 +3945,7 @@ on renderTileMaterial(layer, material, frntImg)
             hts = hts + (tls.getPos(tl+dir)>0)*(delL.getPos(tl+dir)=0)
           end repeat
           if hts = 3 then
-            if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
+            if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
               frntImg = drawATileTile(tl.loch,tl.locV,layer, gTiles[stCat].tls[2], frntImg)
             end if
             repeat with dir in [point(1,0), point(0,1), point(1,1)] then
@@ -3966,7 +3966,7 @@ on renderTileMaterial(layer, material, frntImg)
       repeat while tls.count > 0 then
         the randomSeed  = gLOprops.tileSeed + tls.count
         tl = tls[random(tls.count)]
-        if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
+        if(tl.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
           frntImg = drawATileTile(tl.locH,tl.locV,layer, gTiles[stCat].tls[1], frntImg)
         end if
         tls.deleteOne(tl)
@@ -4161,7 +4161,7 @@ on renderTileMaterial(layer, material, frntImg)
             
             if(legalToPlace)then
               rootPos: point = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
               end if
               repeat with a = 0 to testTile.sz.locH-1 then
@@ -4290,7 +4290,7 @@ on renderTileMaterial(layer, material, frntImg)
             
             if(legalToPlace)then
               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
               end if
               repeat with a = 0 to testTile.sz.locH-1 then
@@ -4418,7 +4418,7 @@ on renderTileMaterial(layer, material, frntImg)
             
             if(legalToPlace)then
               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
               end if
               repeat with a = 0 to testTile.sz.locH-1 then
@@ -4547,7 +4547,7 @@ on renderTileMaterial(layer, material, frntImg)
             
             if(legalToPlace)then
               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
               end if
               repeat with a = 0 to testTile.sz.locH-1 then
@@ -4671,7 +4671,7 @@ on renderTileMaterial(layer, material, frntImg)
             end if
             if (legalToPlace) then
               rootPos = tl + point(((testTile.sz.locH.float / 2.0) + 0.4999).integer - 1, ((testTile.sz.locV.float / 2.0) + 0.4999).integer - 1)
-              if (rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60)))) then
+              if (rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20)))) then
                 frntImg = drawATileTile(rootPos.locH, rootPos.locV, layer, testTile, frntImg) 
               end if
               repeat with a = 0 to testTile.sz.locH - 1
@@ -4811,7 +4811,7 @@ on renderTileMaterial(layer, material, frntImg)
             
             if(legalToPlace)then
               rootPos = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+              if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
                 frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg)
               end if
               repeat with a = 0 to testTile.sz.locH-1 then
@@ -5144,7 +5144,7 @@ on renderTileMaterial(layer, material, frntImg)
           if legalToPlace then
             -- Place tile
             rootPos: point = tl + point(((testTile.sz.locH.float/2.0) + 0.4999).integer-1, ((testTile.sz.locV.float/2.0) + 0.4999).integer-1)
-            if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(100, 60))))then
+            if(rootPos.inside(rect(gRenderCameraTilePos, gRenderCameraTilePos+point(gLOprops.size.locH + 30, gLOprops.size.locV + 20))))then
               frntImg = drawATileTile(rootPos.loch,rootPos.locV,layer,testTile, frntImg, [])
             end if
             

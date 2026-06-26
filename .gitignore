@@ -16,3 +16,7 @@ Desktop.ini
 ReleaseBuild/
 # Directory containing release builds.
 Release/
+*.bak
+*.bak2
+*.bak3
+*.rar

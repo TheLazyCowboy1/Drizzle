@@ -26,12 +26,12 @@ on exitFrame me
     _movie.go(9)
   end if
   
-  cols = 100
-  rows = 60
+  cols = gLOprops.size.locH + 30
+  rows = gLOprops.size.locV + 20
   
-  member("finalImage").image = image(1400, 800, 32)
-  member("shadowImage").image  = image(1400, 800, 32)
-  member("finalDecalImage").image  = image(1400, 800, 32)
+  member("finalImage").image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
+  member("shadowImage").image  = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
+  member("finalDecalImage").image  = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 32)
   gDecalColors = []
   
   extrarect = rect(-50, -50, 50, 50)
@@ -48,23 +48,23 @@ on exitFrame me
     member("dumpImage").image.copyPixels(member("layer"&string(30-q)).image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
     member("layer"&string(30-q)).image.copyPixels( member("dumpImage").image, member("dumpImage").image.rect, member("dumpImage").image.rect)
     
-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-    member("shadowImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
-    member("shadowImage").image.copyPixels(member("layer"&string(30-q)&"sh").image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+    member("shadowImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+    member("shadowImage").image.copyPixels(member("layer"&string(30-q)&"sh").image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
   end repeat
   
-  inv = image(1400, 800, 1)
-  inv.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#color:255})
-  inv.copyPixels(member("shadowImage").image, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
-  member("shadowImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800))
+  inv = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 1)
+  inv.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#color:255})
+  inv.copyPixels(member("shadowImage").image, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
+  member("shadowImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)))
   
   
   
   
-  member("fogImage").image = image(1400,800,32)
+  member("fogImage").image = image((gLOprops.size.locH*20),(gLOprops.size.locV*20),32)
   
-  member("dpImage").image = image(1400,800,32)
-  member("dpImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#color:255})
+  member("dpImage").image = image((gLOprops.size.locH*20),(gLOprops.size.locV*20),32)
+  member("dpImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#color:255})
   
   smpl = image(4,1,32)
   smpl2 = image(30, 1, 32)
@@ -78,18 +78,18 @@ on exitFrame me
     
     
     
-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-    member("dpImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+    member("dpImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
     smpl.copyPixels(DRPxl, rect(smplPs,0,4,1), rect(0,0,1,1), {#color:0})
     
     if (dp+5=12)or(dp+5=8)or(dp+5=4)then
       smpl.copyPixels(DRPxl, rect(0,0,4,1), rect(0,0,1,1), {#blend:10, #color:255})
       smplPs = smplPs + 1
-      member("dpImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#blend:10, #color:255})
+      member("dpImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#blend:10, #color:255})
     end if
     
-    member("fogImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
-    member("fogImage").image.copyPixels(DRPxl, rect(0,0,1400,800), rect(0,0,1,1), {#blend:5, #color:255})
+    member("fogImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36, #color:color(255,255,255)})
+    member("fogImage").image.copyPixels(DRPxl, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,1,1), {#blend:5, #color:255})
     smpl2.setPixel(q-1, 0, color(255, 255, 255))
     smpl2.copyPixels(DRPxl, rect(0,0,30,1), rect(0,0,1,1), {#blend:5, #color:255})
   end repeat
@@ -105,8 +105,8 @@ on exitFrame me
 
   repeat with q2 = 1 to 25 then
     dp = 30-q2-5
-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-    member("finalImage").image.copyPixels(member("layer"&string(30-q2)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+    member("finalImage").image.copyPixels(member("layer"&string(30-q2)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
     if 30-q2 = 10 then
       inv = makeSilhoutteFromImg(member("finalImage").image, 1)
       repeat with q = 1 to gLOprops.size.loch then
@@ -117,7 +117,7 @@ on exitFrame me
           end if
         end repeat
       end repeat 
-      member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
+      member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
       
     else if 30-q2 = 20 then
       
@@ -130,7 +130,7 @@ on exitFrame me
           end if
         end repeat
       end repeat 
-      member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
+      member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
       
     end if
   end repeat
@@ -138,8 +138,8 @@ on exitFrame me
   
   repeat with q = 25 to 30 then
     dp = 30-q-5
-    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-    member("finalImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,1400,800)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
+    pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+    member("finalImage").image.copyPixels(member("layer"&string(30-q)).image, pstRct, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(lightmargin,lightmargin,lightmargin,lightmargin)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+extrarect, {#ink:36})
   end repeat
   
   
@@ -152,25 +152,25 @@ on exitFrame me
       end if
     end repeat
   end repeat 
-  member("finalImage").image.copyPixels(inv, rect(0,0,1400,800), rect(0,0,1400,800), {#ink:36, #color:color(255,255,255)})
+  member("finalImage").image.copyPixels(inv, rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20)), {#ink:36, #color:color(255,255,255)})
   
   
   
-  member("rainBowMask").image = image(1400, 800, 1)
+  member("rainBowMask").image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 1)
   repeat with L in ["A", "B"] then
-    member("flattenedGradient" & L).image = image(1400, 800, 16)
+    member("flattenedGradient" & L).image = image((gLOprops.size.locH*20), (gLOprops.size.locV*20), 16)
     repeat with bd = 0 to 29 then
       lr = 29-bd
       dp = lr-5
       
       member("dumpImage").image.copyPixels(member("gradient" & L & string(lr)).image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
-      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-      getRect = rect(0,0,1400,800)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
+      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+      getRect = rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
       
       member("flattenedGradient" & L).image.copyPixels(member("dumpImage").image, pstRct, getRect, {#maskImage:makeSilhoutteFromImg(member("layer" & lr).image, 0).createMask()})
       
       member("flattenedGradient" & L).image.setPixel(0,0, color(0,0,0))
-      member("flattenedGradient" & L).image.setPixel(1400-1,800-1, color(0,0,0))
+      member("flattenedGradient" & L).image.setPixel((gLOprops.size.locH*20)-1,(gLOprops.size.locV*20)-1, color(0,0,0))
     end repeat
     
   end repeat
@@ -180,13 +180,13 @@ on exitFrame me
       lr = 29-bd
       dp = lr-5
       member("dumpImage").image.copyPixels(member("layer" & string(lr) & "dc").image, rect(0,0,cols*20,rows*20)+rect(lightmargin,lightmargin,lightmargin,lightmargin), rect(0,0,cols*20,rows*20))
-      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point(1400,800)+extraPoint,dp))
-      getRect = rect(0,0,1400,800)+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
+      pstRct = rect(depthPnt(point(0,0)-extraPoint,dp),depthPnt(point((gLOprops.size.locH*20),(gLOprops.size.locV*20))+extraPoint,dp))
+      getRect = rect(0,0,(gLOprops.size.locH*20),(gLOprops.size.locV*20))+rect(gRenderCameraPixelPos, gRenderCameraPixelPos)+rect(lightmargin,lightmargin,lightmargin,lightmargin)+extrarect
       
       member("finalDecalImage").image.copyPixels(member("dumpImage").image, pstRct, getRect, {#maskImage:makeSilhoutteFromImg(member("layer" & lr).image, 0).createMask()})
       
       member("finalDecalImage").image.setPixel(0,0, color(0,0,0))
-      member("finalDecalImage").image.setPixel(1400-1,800-1, color(0,0,0))
+      member("finalDecalImage").image.setPixel((gLOprops.size.locH*20)-1,(gLOprops.size.locV*20)-1, color(0,0,0))
     end repeat
   end if
   c = 1

@@ -26,115 +26,35 @@ public sealed partial class LevelRenderer
     {
         RenderStart();
 
-        // Set up camera order.
-        List<int> camOrder;
-        if (_singleCamera is { } s)
+        // Single full-level pass: cameras are ignored entirely.
+        RenderSetupCamera(0);
+        RenderLayers();
+        RenderPropsPreEffects();
+        RenderEffects();
+        RenderPropsPostEffects();
+        RenderLight();
+        RenderFinalize();
+        RenderColors();
+        RenderFinished();
+
+        RenderStartFrame(RenderStage.SaveFile);
+
+        var image = _runtime.GetCastMember("finalImage")!.image!;
+        OnScreenRenderCompleted?.Invoke(0, image);
+        _countCamerasDone = 1;
+
+        var fileName = Path.Combine(
+            LingoRuntime.MovieBasePath, "Levels", $"{Movie.gLoadedName}.png");
+        Directory.CreateDirectory(Path.GetDirectoryName(fileName)!);
+
+        using (var file = File.Create(fileName))
         {
-            camOrder = new List<int> { s + 1 };
-        }
-        else
-        {
-            camOrder = Enumerable.Range(1, (int)Movie.gCameraProps.cameras.count).ToList();
-
-            if (Movie.gPrioCam is not (null or 0))
-            {
-                camOrder.Remove(Movie.gPrioCam);
-                camOrder.Insert(0, Movie.gPrioCam);
-            }
-        }
-
-        if (camOrder.Count == 0)
-        {
-            Movie.newmakelevel(Movie.gLoadedName);
-            return;
-        }
-
-        // Each camera's stored point is the top-left world-pixel of its view.
-        // Compute the common origin so we can place every camera into one image.
-        var minX = int.MaxValue;
-        var minY = int.MaxValue;
-        foreach (var camIndex in camOrder)
-        {
-            var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
-            minX = Math.Min(minX, (int)Math.Round((double)cam.loch));
-            minY = Math.Min(minY, (int)Math.Round((double)cam.locv));
-        }
-
-        // Hold each rendered camera until all are done (sizes only known after render).
-        var rendered = new List<(int ox, int oy, Image<Bgra32> img)>();
-        var maxX = int.MinValue;
-        var maxY = int.MinValue;
-
-        try
-        {
-            foreach (var camIndex in camOrder)
-            {
-                try
-                {
-                    RenderSetupCamera(camIndex);
-
-                    RenderLayers();
-                    RenderPropsPreEffects();
-                    RenderEffects();
-                    RenderPropsPostEffects();
-                    RenderLight();
-                    RenderFinalize();
-                    RenderColors();
-                    RenderFinished();
-
-                    RenderStartFrame(RenderStage.SaveFile);
-
-                    var image = _runtime.GetCastMember("finalImage")!.image!;
-                    OnScreenRenderCompleted?.Invoke(camIndex, image);
-
-                    // Clone, because the next camera overwrites the finalImage buffer.
-                    var imgSharp = image.GetImgSharpImage().CloneAs<Bgra32>();
-                    var cam = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
-                    var ox = (int)Math.Round((double)cam.loch) - minX;
-                    var oy = (int)Math.Round((double)cam.locv) - minY;
-
-                    rendered.Add((ox, oy, imgSharp));
-                    maxX = Math.Max(maxX, ox + imgSharp.Width);
-                    maxY = Math.Max(maxY, oy + imgSharp.Height);
-
-                    _countCamerasDone += 1;
-                }
-                catch (RenderCancelledException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new RenderCameraException($"Exception on camera {camIndex}", e);
-                }
-            }
-
-            // Composite every camera into one big image.
-            using var stitched = new Image<Bgra32>(maxX, maxY);
-            foreach (var (ox, oy, img) in rendered)
-            {
-                stitched.Mutate(ctx => ctx.DrawImage(img, new Point(ox, oy), 1f));
-            }
-
-            var fileName = Path.Combine(
-                LingoRuntime.MovieBasePath,
-                "Levels",
-                $"{Movie.gLoadedName}.png");
-
-            Directory.CreateDirectory(Path.GetDirectoryName(fileName)!); 
-            
-            using var file = File.Create(fileName);
-            stitched.Metadata.GetPngMetadata().TextData.Add(
+            var imgSharp = image.GetImgSharpImage();
+            imgSharp.Metadata.GetPngMetadata().TextData.Add(
                 new PngTextData("Software", PngSoftwareName, null, null));
-            stitched.SaveAsPng(file);
-        }
-        finally
-        {
-            foreach (var (_, _, img) in rendered)
-                img.Dispose();
+            imgSharp.SaveAsPng(file);
         }
 
-        // Output level data.
         Movie.newmakelevel(Movie.gLoadedName);
     }
 
@@ -149,25 +69,18 @@ public sealed partial class LevelRenderer
     {
         RenderStartFrame(RenderStage.CameraSetup);
 
-        var camera = (LingoPoint)Movie.gCameraProps.cameras[camIndex];
         _cameraIndex = camIndex;
         Movie.gCurrentRenderCamera = new LingoNumber(camIndex);
-        Movie.gRenderCameraTilePos =
-            new LingoPoint(
-                (camera.loch / (LingoNumber)20.0 - (LingoNumber)0.49999).integer,
-                (camera.locv / (LingoNumber)20.0 - (LingoNumber)0.49999).integer);
 
-        Movie.gRenderCameraPixelPos = camera - (Movie.gRenderCameraTilePos * 20);
-        Movie.gRenderCameraPixelPos.loch = Movie.gRenderCameraPixelPos.loch.integer;
-        Movie.gRenderCameraPixelPos.locv = Movie.gRenderCameraPixelPos.locv.integer;
-
-        Movie.gRenderCameraTilePos += new LingoPoint(-15, -10);
+        // Fixed pseudo-camera covering the whole level (15/10-tile margin).
+        Movie.gRenderCameraTilePos = new LingoPoint(-15, -10);
+        Movie.gRenderCameraPixelPos = new LingoPoint(0, 0);
     }
 
     private void RenderLayers()
     {
-        const int cols = 100;
-        const int rows = 60;
+        int cols = (int)Movie.gLOprops.size.loch + 30;
+        int rows = (int)Movie.gLOprops.size.locv + 20;
 
         RenderStartFrame(RenderStage.RenderLayers);
 

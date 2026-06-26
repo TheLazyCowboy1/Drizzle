@@ -35,9 +35,11 @@ public sealed partial class LevelRenderer
         var grimeActive = (LingoNumber)Movie.grimeActive > 0;
         var grimeOnGradients = (LingoNumber)Movie.grimeOnGradients > 0;
         var bkgFix = (LingoNumber)Movie.bkgFix > 0;
+        var lvlW = (int)Movie.gLOprops.size.loch * 20;
+        var lvlH = (int)Movie.gLOprops.size.locv * 20;
 
         var c = (int)Movie.c - 1;
-        for (var q = 0; q < 1400; q++)
+        for (var q = 0; q < lvlW; q++)
         {
             // NOTE: q and c are shifted by one compared to the original Lingo code.
             // This is much more sane, but keep it in mind.
@@ -69,8 +71,8 @@ public sealed partial class LevelRenderer
                 {
                     foreach (var (dpX, dpY) in FogDisplacements)
                     {
-                        var dpQ = Math.Clamp(q + dpX, 0, 1339);
-                        var dpC = Math.Clamp(c + dpY, 0, 799);
+                        var dpQ = Math.Clamp(q + dpX, 0, lvlW - 1);
+                        var dpC = Math.Clamp(c + dpY, 0, lvlH - 1);
                         var otherFogFac = (255 - fogImage.getpixel(dpQ, dpC).RedByte) / 255.0f;
                         otherFogFac = (otherFogFac - 0.0275f) / 0.9411f;
                         if (Math.Abs(fogFac - otherFogFac) > 0.0333f)
@@ -237,7 +239,7 @@ public sealed partial class LevelRenderer
 
         Movie.c += 1;
 
-        if (Movie.c > 800)
+        if (Movie.c > lvlH)
         {
             Movie.c += 1;
             Movie.keepLooping = (LingoNumber)0;

@@ -84,6 +84,7 @@ end
 
 on ShouldThisPropRender(prop, qd: list, settings)
   type return: number
+  global gLOprops
   if (settings.renderTime <> afterEffects) then
     return FALSE
   end if
@@ -99,7 +100,7 @@ on ShouldThisPropRender(prop, qd: list, settings)
       dig = Diag(mdPoint, qd[q])
     end if
   end repeat
-  return diag(mdPoint, closestPntInRect(rect(-50, -100, 2050, 1100), mdPoint)) <= dig
+  return diag(mdPoint, closestPntInRect(rect(-50, -100, (gLOprops.size.locH + 30) * 20 + 50, (gLOprops.size.locV + 20) * 20 + 100), mdPoint)) <= dig
 end
 
 on updateText(me)

@@ -1485,7 +1485,8 @@ on applyRingChains me, q, c, eftc
 end
 
 on closestCamera me, pos
-  global gCameraProps
+  global gCameraProps, gCurrentRenderCamera
+  if gCurrentRenderCamera = 0 then return 1
   closest = 1000
   bestCam = 0
   repeat with camNum = 1 to gCameraProps.cameras.count then
@@ -1499,6 +1500,8 @@ on closestCamera me, pos
 end
 
 on seenByCamera me, camNum, pos
+  global gCurrentRenderCamera
+  if gCurrentRenderCamera = 0 then return 1
   global gCameraProps
   
   cameraPos = gCameraProps.cameras[camNum]
