@@ -14,12 +14,12 @@ on exitFrame(me)
   rows = gLOprops.size.locv
   repeat with q = 0 to 29
     strq = string(q)
-    member("layer" & strq).image = image(800+cols*20, 400+rows*20, 32)
-    member("gradientA" & strq).image = image(800+cols*20, 400+rows*20, 16)
-    member("gradientB" & strq).image = image(800+cols*20, 400+rows*20, 16)
-    member("layer" & strq & "dc").image = image(800+cols*20, 400+rows*20, 32)
+    member("layer" & strq).image = image(cols*20, rows*20, 32)
+    member("gradientA" & strq).image = image(cols*20, rows*20, 16)
+    member("gradientB" & strq).image = image(cols*20, rows*20, 16)
+    member("layer" & strq & "dc").image = image(cols*20, rows*20, 32)
   end repeat
-  member("rainBowMask").image = image(800+cols*20, 400+rows*20, 32)
+  member("rainBowMask").image = image(cols*20, rows*20, 32)
   renderLevel()
   c = 1
 end
