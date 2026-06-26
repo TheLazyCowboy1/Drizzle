@@ -40,6 +40,7 @@ public sealed partial class LevelRenderer
                 camOrder.Insert(0, Movie.gPrioCam);
             }
         }
+        camOrder = new List<int>() { 1 };
 
         foreach (var camIndex in camOrder)
         {
@@ -113,12 +114,15 @@ public sealed partial class LevelRenderer
         Movie.gRenderCameraPixelPos.locv = Movie.gRenderCameraPixelPos.locv.integer;
 
         Movie.gRenderCameraTilePos += new LingoPoint(-15, -10);
+
+
+        Movie.gRenderCameraTilePos = Movie.gRenderCameraPixelPos = Movie.gLEProps.camPos = Movie.gCameraProps.cameras[camIndex] = new LingoPoint(0, 0);
     }
 
     private void RenderLayers()
     {
-        const int cols = 100;
-        const int rows = 60;
+        int cols = (int)Movie.gLOprops.size.loch;
+        int rows = (int)Movie.gLOprops.size.locv;
 
         RenderStartFrame(RenderStage.RenderLayers);
 

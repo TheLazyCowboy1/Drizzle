@@ -30,10 +30,10 @@ on exitFrame me
   put "Start render"
   
   gLOprops.pal = 1
-  
   firstCamRepeat = true
   gCurrentRenderCamera = 0
   gAnyDecals = 0
+
   me.createShortCuts()
   
   tileSetIndex = []

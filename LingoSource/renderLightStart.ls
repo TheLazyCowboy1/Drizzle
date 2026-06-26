@@ -12,7 +12,9 @@ on exitFrame(me)
   end if
   the randomSeed = gLOprops.tileSeed
   blkI2 = member("blackOutImg2").image
-  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, 2000, 1200), rect(0, 0, 2000, 1200), {#ink:36, #color:DRWhite})
+  cols: number = 800+gLOprops.size.loch*20
+  rows: number = 400+gLOprops.size.locv*20
+  member("layer0dc").image.copyPixels(blkI2, rect(0, 0, cols, rows), rect(0, 0, cols, rows), {#ink:36, #color:DRWhite})
   repeat with layer = 1 to 3
     repeat with q = 1 to gLOprops.size.loch
       repeat with c = 1 to gLOprops.size.locv
@@ -32,8 +34,8 @@ on exitFrame(me)
       end repeat
     end repeat
   end repeat
-  cols: number = 2000
-  rows: number = 1200
+  -- cols: number = 2000
+  -- rows: number = 1200
   marginPixels: number = 150
   marginPixels2: number = marginPixels * 2
   if (gAnyDecals) then

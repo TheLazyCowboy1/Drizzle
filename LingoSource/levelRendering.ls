@@ -65,8 +65,6 @@ on setUpLayer(layer)
   --    end repeat
   --  end repeat
   -- global gLOprops
-  gRenderCameraTilePos = point(1, 1)
-  gRenderCameraPixelPos = point(20, 20)
   
   member("vertImg").image = image(cols*20, rows*20, 32)
   member("horiImg").image = image(cols*20, rows*20, 32)
