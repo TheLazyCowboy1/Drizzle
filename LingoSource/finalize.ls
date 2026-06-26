@@ -34,11 +34,11 @@ on exitFrame me
   member("finalDecalImage").image  = image(cols*20, rows*20, 32)
   gDecalColors = []
   
-  extrarect = rect(-50, -50, 50, 50)
+  extrarect = rect(0, 0, 0, 0)
   extraPoint = point(extrarect.right, extrarect.bottom)
-  lightmargin = 150
+  lightmargin = 0
   
-  gRenderCameraPixelPos = gRenderCameraPixelPos + point(15*20, 10*20)
+  -- gRenderCameraPixelPos = gRenderCameraPixelPos + point(15*20, 10*20)
   
   member("dumpImage").image = image((cols*20) + lightmargin*2, (rows*20) + lightmargin*2, 32)
   
