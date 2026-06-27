@@ -24,10 +24,11 @@ CultureFix.FixCulture();
 
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
-const string REGION = "SU";
+const string REGION = "wAU";
 var parsedArgs = new CommandLineArgs(
     new CommandLineArgs.VerbRender(4,
-        Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION)).ToList(),
+        Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION))
+            .Where(f => f.EndsWith(".txt") && !File.Exists(Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png"))).ToList(),
         false, null)
     );
 
