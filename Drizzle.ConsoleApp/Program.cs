@@ -25,12 +25,15 @@ CultureFix.FixCulture();
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
 const string REGION = "wAU";
-var parsedArgs = new CommandLineArgs(
-    new CommandLineArgs.VerbRender(4,
-        Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION))
-            .Where(f => f.EndsWith(".txt") && !File.Exists(Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png"))).ToList(),
-        false, null)
-    );
+List<string> fileList = Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION))
+            .Where(f => {
+                if (!f.EndsWith(".txt")) return false;
+                string path = Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
+                return !File.Exists(path) || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
+                })
+            .ToList();
+
+var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(4, fileList, false, null));
 
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
 var checksumErrors = 0;
@@ -39,6 +42,8 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Error()
     .WriteTo.Console(theme: AnsiConsoleTheme.Literate)
     .CreateLogger();
+
+Console.WriteLine("Rooms to render: " + string.Join(", ", fileList.Select(f => Path.GetFileNameWithoutExtension(f))));
 
 return parsedArgs.Verb switch
 {
