@@ -61,7 +61,7 @@ end
 on depthPnt(pnt, dpt)
   global ldEvilCangleLayer
   if ldEvilCangleLayer then dpt = dpt + 30
-  return pnt - point(dpt, 0.5*dpt)
+  return pnt - point(0.5*dpt, 0.3*dpt)
 end
 
 on seedForTile(tile: point, effectSeed: number)
