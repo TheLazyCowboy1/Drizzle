@@ -24,6 +24,11 @@ public sealed partial class LevelRenderer
 
     public void DoRender()
     {
+        if (_singleCamera != null && _singleCamera.Value != 1)
+            return; //only render camera 1
+        if ((int)Movie.gCameraProps.cameras.count < 2)
+            return; //only render multi-screen rooms
+
         RenderStart();
 
         // Single full-level pass: cameras are ignored entirely.

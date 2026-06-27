@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Text.Json;
@@ -20,8 +22,14 @@ using SixLabors.ImageSharp;
 
 CultureFix.FixCulture();
 
-if (!CommandLineArgs.TryParse(args, out var parsedArgs))
-    return 1;
+//if (!CommandLineArgs.TryParse(args, out var parsedArgs))
+//    return 1;
+const string REGION = "SU";
+var parsedArgs = new CommandLineArgs(
+    new CommandLineArgs.VerbRender(4,
+        Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION)).ToList(),
+        false, null)
+    );
 
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
 var checksumErrors = 0;
