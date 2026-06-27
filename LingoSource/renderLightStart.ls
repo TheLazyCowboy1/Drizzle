@@ -80,5 +80,5 @@ end
 
 on quadifyMember(me, mem, fac)
   newImg: image = member(mem).image.duplicate()
-  member(mem).image.copypixels(newImg, newImg.rect - rect(fac, fac, 0, 0), newImg.rect)
+  member(mem).image.copypixels(newImg, newImg.rect - rect(fac, 0.5*fac, 0, 0), newImg.rect)
 end

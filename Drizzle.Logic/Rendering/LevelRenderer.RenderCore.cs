@@ -44,7 +44,7 @@ public sealed partial class LevelRenderer
         _countCamerasDone = 1;
 
         var fileName = Path.Combine(
-            LingoRuntime.MovieBasePath, "Levels", $"{Movie.gLoadedName}.png");
+            LingoRuntime.MovieBasePath, "Levels", $"{Movie.gLoadedName}_flat.png");
         Directory.CreateDirectory(Path.GetDirectoryName(fileName)!);
 
         using (var file = File.Create(fileName))
