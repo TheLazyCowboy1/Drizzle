@@ -24,14 +24,15 @@ CultureFix.FixCulture();
 
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
-const string REGION = "wAU";
-List<string> fileList = Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", REGION))
-            .Where(f => {
-                if (!f.EndsWith(".txt")) return false;
-                string path = Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
-                return !File.Exists(path) || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
-                })
-            .ToList();
+string[] REGIONS = new string[] { "wAU", "UW", "SU", "HI", "SL" };
+List<string> fileList = REGIONS.SelectMany(
+            r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
+        .Where(f => {
+            if (!f.EndsWith(".txt")) return false;
+            string path = Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
+            return !File.Exists(path) || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
+            })
+        .ToList();
 
 var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(4, fileList, false, null));
 
