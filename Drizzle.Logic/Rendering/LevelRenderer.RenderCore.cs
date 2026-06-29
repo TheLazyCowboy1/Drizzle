@@ -28,7 +28,6 @@ public sealed partial class LevelRenderer
             return; //only render camera 1
         if ((int)Movie.gCameraProps.cameras.count < 2)
             return; //only render multi-screen rooms
-        /*
 
         RenderStart();
 
@@ -60,7 +59,6 @@ public sealed partial class LevelRenderer
                 new PngTextData("Software", PngSoftwareName, null, null));
             imgSharp.SaveAsPng(file);
         }
-        */
 
         //add an extra camera, but offset it by 30,000 pixels so that SBCameraScroll ordinarily discards it
         Movie.gCameraProps.cameras.Add(new LingoPoint(30000, 30000));
