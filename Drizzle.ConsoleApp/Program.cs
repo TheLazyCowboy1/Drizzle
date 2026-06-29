@@ -24,11 +24,12 @@ CultureFix.FixCulture();
 
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
-string[] REGIONS = new string[] { "wAU", "UW", "SU", "HI", "SL" };
+string[] REGIONS = new string[] { "UW", "SU", "HI", "SL" };
 List<string> fileList = REGIONS.SelectMany(
             r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
         .Where(f => {
             if (!f.EndsWith(".txt")) return false;
+            return true;
             string path = Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
             return !File.Exists(path) || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
             })
