@@ -94,10 +94,13 @@ public sealed partial class LevelRenderer
                 if (minX != 0 || minY != 0 || cropW != fullW || cropH != fullH)
                 {
                     var cropped = new LingoImage(cropW, cropH, 32);
+
+                    cropped.copypixels(image, new LingoRect(0, 0, cropW, cropH), new LingoRect(minX, minY, minX + cropW, minY + cropH));
+                    /* //MANUAL COPY METHOD
                     for (int y = 0; y < cropH; y++)
                         for (int x = 0; x < cropW; x++)
                             cropped.setpixel(x, y, image.getpixel(minX + x, minY + y));
-
+                    */
                     image = cropped;
                     _runtime.GetCastMember("finalImage")!.image = cropped;
 
@@ -125,11 +128,14 @@ public sealed partial class LevelRenderer
         }
 
         //add an extra camera, but offset it by 30,000 pixels so that SBCameraScroll ordinarily discards it
+        /* //UNUSED, camera cropping is used instead
         Movie.gCameraProps.cameras.Add(new LingoPoint(30000, 30000));
         LingoList tempList = new LingoList(new object[] { 0, 0 });
         Movie.gCameraProps.quads.add(new LingoList(new LingoList[] { tempList, tempList, tempList, tempList }));
+        */
 
-        Movie.newmakelevel(Movie.gLoadedName);
+        //DON'T create the level file. It's not needed; we only need the .png
+        //Movie.newmakelevel(Movie.gLoadedName);
     }
 
 

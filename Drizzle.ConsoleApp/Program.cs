@@ -24,8 +24,8 @@ CultureFix.FixCulture();
 
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
-//rendered already: "UW", "SU", "HI", "SL", 
-string[] REGIONS = new string[] {  "CC" };
+//rendered already: "CC", 
+string[] REGIONS = new string[] { "SU" };
 List<string> fileList = REGIONS.SelectMany(
             r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
         .Where(f => {
