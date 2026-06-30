@@ -25,7 +25,7 @@ CultureFix.FixCulture();
 //if (!CommandLineArgs.TryParse(args, out var parsedArgs))
 //    return 1;
 //rendered already: "UW", "SU", "HI", "SL", 
-string[] REGIONS = new string[] { "wAU", "CC", "CL", "DM", "DS", "GW", "HR", "LC" };
+string[] REGIONS = new string[] {  "CC" };
 List<string> fileList = REGIONS.SelectMany(
             r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
         .Where(f => {
@@ -35,7 +35,7 @@ List<string> fileList = REGIONS.SelectMany(
             })
         .ToList();
 
-var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(4, fileList, false, null));
+var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(1, fileList, false, null));
 
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
 var checksumErrors = 0;

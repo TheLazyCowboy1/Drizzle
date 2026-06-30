@@ -45,6 +45,70 @@ public sealed partial class LevelRenderer
         RenderStartFrame(RenderStage.SaveFile);
 
         var image = _runtime.GetCastMember("finalImage")!.image!;
+
+        // === FLAT CROP TO CAMERA BOUNDING BOX ===========================================
+        // finalImage maps matrix tile (1,1) -> pixel (0,0); camera positions live in the same
+        // pixel space. Cropping the flat to [minCam .. maxCam + screen] reproduces exactly the
+        // texture SBCameraScroll stitches from per-screen PNGs, so the mod can use its normal
+        // min_camera_position (from the vanilla .txt cameras) with NO extra data shipped.
+        // The editable extraTiles border drops out automatically (cameras never cover it).
+        {
+            const int CAM_OFFSET_X = 0;
+            const int CAM_OFFSET_Y = 0;
+            const int SCREEN_W = 1400;
+            const int SCREEN_H = 800;
+
+            var cams = Movie.gCameraProps.cameras;
+            int nCams = (int)cams.count;
+            if (nCams > 0)
+            {
+                int mnX = int.MaxValue, mnY = int.MaxValue, mxX = int.MinValue, mxY = int.MinValue;
+                for (int i = 1; i <= nCams; i++)
+                {
+                    var cam = (dynamic)cams[i];
+                    int cx = (int)cam.loch;
+                    int cy = (int)cam.locv;
+                    if (cx < mnX) mnX = cx;
+                    if (cy < mnY) mnY = cy;
+                    if (cx > mxX) mxX = cx;
+                    if (cy > mxY) mxY = cy;
+                }
+
+                int fullW = (int)Movie.gLOprops.size.loch * 20;
+                int fullH = (int)Movie.gLOprops.size.locv * 20;
+
+                int minX = mnX + CAM_OFFSET_X;
+                int minY = mnY + CAM_OFFSET_Y;
+                int cropW = (mxX - mnX) + SCREEN_W;
+                int cropH = (mxY - mnY) + SCREEN_H;
+
+                if (minX < 0) minX = 0;
+                if (minY < 0) minY = 0;
+                if (minX > fullW - 1) minX = fullW - 1;
+                if (minY > fullH - 1) minY = fullH - 1;
+                if (cropW > fullW - minX) cropW = fullW - minX;
+                if (cropH > fullH - minY) cropH = fullH - minY;
+                if (cropW < 1) cropW = 1;
+                if (cropH < 1) cropH = 1;
+
+                if (minX != 0 || minY != 0 || cropW != fullW || cropH != fullH)
+                {
+                    var cropped = new LingoImage(cropW, cropH, 32);
+                    for (int y = 0; y < cropH; y++)
+                        for (int x = 0; x < cropW; x++)
+                            cropped.setpixel(x, y, image.getpixel(minX + x, minY + y));
+
+                    image = cropped;
+                    _runtime.GetCastMember("finalImage")!.image = cropped;
+
+                    Log.Information(
+                        "{LevelName} flat cropped to camera bbox: origin=({MinX},{MinY}) size={W}x{H} (full {FW}x{FH})",
+                        Movie.gLoadedName, minX, minY, cropW, cropH, fullW, fullH);
+                }
+            }
+        }
+        // === END FLAT CROP ==============================================================
+
         OnScreenRenderCompleted?.Invoke(0, image);
         _countCamerasDone = 1;
 
