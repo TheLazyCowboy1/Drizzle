@@ -26,16 +26,21 @@ CultureFix.FixCulture();
 //    return 1;
 //rendered already: "CC", 
 string[] REGIONS = new string[] { "SU" };
-List<string> fileList = REGIONS.SelectMany(
-            r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
+//List<string> fileList = REGIONS.SelectMany(
+//            r => Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World", r)))
+string[] rooms = new string[] { "CL_B29", "CL_C03", "CL_C05", "CL_LCSWAP", "CL_LEDGE", "CL_LSCOREACCESS", "DM_I05", "DM_I06", "DM_I08", "DM_I09", "DM_I11", "DM_LAB11", "DM_LAB14", "DM_MEM01", "DM_MEM02", "DM_MEM04", "GW_B06", "GW_B06_PAST", "GW_B08", "GW_C04", "GW_C04_PAST", "GW_C05", "GW_C09", "HR_gbfi", "HR_L02", "HR_R04", "LC_02A", "LC_A02", "LC_C08", "LC_crash", "LC_fence", "LC_FINAL", "LC_longslum", "LC_mallentrance", "LC_ruin03", "LC_streets", "LC_stripmallNEW", "LC_stripmall", "LC_SUBWAY04", "LC_templegate", "LF_C01", "LF_C02", "LF_D02", "LF_D06", "LF_D08", "LF_D09", "LF_E01", "LF_E03", "LF_E04", "LF_E05", "LF_F01", "LF_H01", "LF_H02", "LF_J01", "LF_M01", "LF_M02", "LF_M04", "LF_Test3", "LM_B01", "LM_C01", "LM_C04", "LM_H02", "MS_B01", "MS_B04", "MS_D01", "MS_E01", "MS_HEART01", "MS_HEARTVENT01", "MS_HEARTVENT", "MS_I08", "MS_I11", "MS_LAB14", "MS_MEM01", "MS_MEM02", "MS_MEM04", "MS_splitsewers", "MS_V08", "MS_VENT03", "MS_VENT17", "OE_CAVE03", "RM_ASSEMBLY", "RM_C04", "RM_D02", "RM_DEAD01", "RM_DEAD03", "RM_E03", "RM_E05", "RM_LAB13", "RM_LAB3", "RM_LAB8", "RM_LC01", "RM_LC04", "RM_LCEXTRA", "RM_LCFILTERS", "RM_LCFINAL", "RM_LCHEADER", "RM_LCMANUFOLD", "RM_LCMEMEXIT", "RM_LCRPIPE", "RM_LCSWAP", "RM_LCTPIPE", "RM_LSCOREACCESS", "RM_LSLOCKDOWN", "RM_LSSECRET", "RM_LSVALVES", "SB_F03", "SB_H02", "SH_B12", "SH_C02_bkp", "SH_C02", "SH_C03", "SH_D03", "SH_E01RIV", "SH_E01", "SH_E02", "SH_E03RIV", "SH_E03", "SH_H01RIV", "SH_H01", "SH_LEDGE", "SH_OVERHEAD", "SI_B02x", "SI_B07x", "SI_B07", "SI_B09", "SI_C01x", "SI_C01", "SI_C02", "SI_C06x", "SI_C09", "SI_D01", "SI_D09", "SL_C04", "SL_C07", "SL_F02", "SS_C04", "SS_C08", "SS_D02", "SS_E03", "SS_E05", "trains", "UG_B07", "UG_D01", "UW_D04", "wara_P07", "WARA_P20", "WARC_A02", "WARC_A03", "WARC_A04", "WARC_A05", "WARC_A06", "WARC_A07", "WARC_B02", "WARC_B05", "WARC_B07", "WARC_B08", "WARC_B10", "WARC_B12", "WARC_C01", "WARC_C02", "WARC_C03", "WARC_C05", "WARC_C06", "WARC_C09", "WARC_E05", "WARC_E06", "WARC_F05", "WARC_F11", "ware_H02", "ware_H05", "ware_I03", "ware_i04", "ware_I09", "ware_I11", "warf_B32", "warg_B37", "warg_O13_Future", "WBLA_B02", "WBLA_B05", "WBLA_C03", "WBLA_F01", "WBLA_F02", "WBLA_F03", "WBLA_H01", "WBLA_J01", "wdsr_B07", "wgwr_C09b", "wgwr_C09", "wmpa_a04", "wmpa_a06", "wmpa_a07", "wmpa_a08", "wmpa_b01", "wmpa_b04", "WRFB_B01", "WRFB_B05", "WRFB_B06", "WRFB_B11", "WRFB_C07", "WRFB_C10", "WRFB_C13", "WRFB_D01", "WRFB_D02", "WRFB_D03", "WRFB_D04", "WRFB_F03", "wska_d22", "wskc_a10BG", "wskc_a10", "wskc_a14BG", "wskc_a14", "wskc_a15BG", "wskc_a15", "wskd_b01", "wskd_b02", "wskd_b12", "wskd_b28", "wskd_b33", "wskd_b38_bkg", "wskd_b38", "wssr_abyss", "wssr_LABBIG", "wssr_portholes" };
+//string[] rooms = new string[] { "CL_B29" };
+List<string> fileList = Directory.EnumerateFiles(Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "LevelEditorProjects", "World"), "*", SearchOption.AllDirectories)
+    //.SelectMany(d => Directory.EnumerateFiles(d, "*", SearchOption.AllDirectories)
         .Where(f => {
             if (!f.EndsWith(".txt")) return false;
-            string path = Path.Combine(f, "..", "..", "..", "..", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
-            return !File.Exists(path) || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
+            if (!rooms.Any(r => (r + ".txt").Equals(Path.GetFileName(f), StringComparison.InvariantCultureIgnoreCase))) return false;
+            string path = Path.Combine(Assembly.GetEntryAssembly()!.Location, "..", "..", "..", "..", "..", "Data", "Levels", $"{Path.GetFileNameWithoutExtension(f)}_flat.png");
+            return !File.Exists(path);// || File.GetCreationTimeUtc(f) > File.GetCreationTimeUtc(path);
             })
         .ToList();
 
-var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(1, fileList, false, null));
+var parsedArgs = new CommandLineArgs(new CommandLineArgs.VerbRender(4, fileList, false, null));
 
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
 var checksumErrors = 0;

@@ -217,6 +217,7 @@ public sealed partial class LevelRenderer
                                 {
                                     gDecalColors.add(dcGet);
                                     decalColor = (int) gDecalColors.count;
+                                    //Console.WriteLine("Added decal color " + decalColor);
                                 }
 
                                 if (bkgFix && decalColor < 2)

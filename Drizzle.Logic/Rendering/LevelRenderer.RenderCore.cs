@@ -101,6 +101,15 @@ public sealed partial class LevelRenderer
                         for (int x = 0; x < cropW; x++)
                             cropped.setpixel(x, y, image.getpixel(minX + x, minY + y));
                     */
+
+                    //manually copy gDecalColors
+                    LingoList decalColors = Movie.gDecalColors;
+                    Console.WriteLine("decalColors.count = " + decalColors.count);
+                    for (int i = 0; i < decalColors.count; i++)
+                    {
+                        cropped.setpixel(i, 0, decalColors[i + 1]);
+                    }
+
                     image = cropped;
                     _runtime.GetCastMember("finalImage")!.image = cropped;
 
